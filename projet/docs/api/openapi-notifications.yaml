@@ -1,0 +1,233 @@
+openapi: 3.1.0
+info:
+  title: Mini réseau social — service notifications
+  version: 1.0.0
+  description: >
+    Notifications personnelles de l'utilisateur. Aujourd'hui un seul type :
+    `comment_on_post` (quelqu'un a commenté un de vos posts).
+
+
+    Les notifications sont créées de façon asynchrone : `notifications` s'abonne
+    au canal Redis `comment.created` publié par `posts`. Ce contrat ne couvre
+    que la partie **lecture/marquage** exposée au client.
+
+
+    **Toutes** les routes `/notifications*` exigent `Authorization: Bearer <jwt>`
+    (les notifications sont privées). Le token est validé via un appel interne à
+    `users` ; si `users` est injoignable, réponse `503`.
+
+
+    Routes décrites **derrière le gateway** : `servers.url` inclut
+    `/api/notifications`, que le gateway retire. D'où l'URL publique à segment
+    doublé `GET /api/notifications/notifications`.
+servers:
+  - url: http://{host}/api/notifications
+    variables:
+      host:
+        default: localhost:8081
+        description: hôte:port du gateway
+# /health est public ; toutes les autres opérations redéclarent `security: [bearerAuth]`.
+security: []
+tags:
+  - name: notifications
+    description: Consultation et marquage (authentifié)
+  - name: exploitation
+    description: Santé
+
+paths:
+  /notifications:
+    get:
+      tags: [notifications]
+      operationId: listNotifications
+      summary: Lister ses notifications
+      description: >
+        URL publique `GET /api/notifications/notifications`. Renvoie les
+        notifications du porteur du token, les plus récentes d'abord.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste (éventuellement vide) des notifications.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+              example:
+                - id: 1
+                  type: comment_on_post
+                  read: false
+                  created_at: '2026-09-02T13:51:00.500Z'
+                  payload:
+                    post_id: 1
+                    post_author_id: 1
+                    comment_author_id: 2
+                    comment_author_pseudo: bob
+                    comment_id: 1
+                    created_at: '2026-09-02T13:51:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/UsersUnavailable'
+
+  /notifications/{id}/read:
+    patch:
+      tags: [notifications]
+      operationId: markNotificationRead
+      summary: Marquer une notification comme lue
+      description: >
+        URL publique `PATCH /api/notifications/notifications/{id}/read`.
+        Idempotent. `403` si la notification n'appartient pas au porteur du token.
+        Pas de corps de réponse.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '204':
+          description: Notification marquée comme lue.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: La notification appartient à un autre utilisateur.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not the recipient
+        '404':
+          description: Notification inexistante.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: notification 42 not found
+        '503':
+          $ref: '#/components/responses/UsersUnavailable'
+
+  /health:
+    get:
+      tags: [exploitation]
+      operationId: notificationsHealth
+      summary: Santé du service (Spring Boot Actuator)
+      description: Public. URL publique `GET /api/notifications/health`.
+      responses:
+        '200':
+          description: Service en vie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: UP
+                components:
+                  db:
+                    status: UP
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'En-tête `Authorization: Bearer <token>` obtenu via POST /api/users/login.'
+
+  responses:
+    Unauthorized:
+      description: Token absent, invalide ou expiré.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: unauthorized
+    UsersUnavailable:
+      description: >
+        Dépendance `users` momentanément injoignable : impossible de valider le
+        token. Réessayer plus tard.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: users service unavailable
+
+  schemas:
+    Notification:
+      type: object
+      required: [id, type, payload, read, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          type: string
+          description: >
+            Type de notification. Seule valeur actuelle : `comment_on_post`.
+            Un client robuste teste ce champ avant de lire `payload`.
+          examples: [comment_on_post]
+        payload:
+          $ref: '#/components/schemas/CommentOnPostPayload'
+        read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+
+    CommentOnPostPayload:
+      type: object
+      description: >
+        Contenu du `payload` pour `type: comment_on_post`. Objet ouvert :
+        d'autres types pourront avoir d'autres formes.
+      properties:
+        post_id:
+          type: integer
+          format: int64
+        post_author_id:
+          type: integer
+          format: int64
+          description: Destinataire de la notification.
+        comment_author_id:
+          type: integer
+          format: int64
+        comment_author_pseudo:
+          type: string
+        comment_id:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+          description: Date du commentaire déclencheur.
+      additionalProperties: true
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+      additionalProperties: false
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, OUT_OF_SERVICE, UNKNOWN]
+        components:
+          type: object
+          additionalProperties: true
+      additionalProperties: true

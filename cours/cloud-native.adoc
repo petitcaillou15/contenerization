@@ -1,0 +1,49 @@
+ifeval::["{docname}" == "cloud-native"]
+:imagesdir: ./images
+= Applications cloud-native
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+endif::[]
+
+== Applications cloud-native
+
+=== C'est quoi, le cloud-native ?
+
+* Concevoir des applications pour *tirer parti du cloud*, pas seulement les y héberger
+* Elles sont typiquement :
+** découpées en *services* (_microservices_)
+** *conteneurisées* (_containerized_)
+** pilotées par un *orchestrateur* (_orchestrator_, Kubernetes)
+** *déclaratives* (_declarative_) et *automatisées*
+** *observables* (_observable_)
+* Objectif : déployer *souvent*, *vite*, et *sans peur*
+
+=== Les 12 facteurs (12-factor app)
+
+Un ensemble de bonnes pratiques pour des applications faciles à déployer et à faire évoluer.
+
+Ceux que vous allez *croiser dans ce projet* :
+
+[cols="1,2"]
+|===
+| *Config* (_configuration_) | La configuration est dans l'*environnement*, pas dans le code ni dans l'image
+| *Backing services* | La base de données, le cache... sont des *ressources attachées*, remplaçables
+| *Processus sans état* (_stateless_) | L'état vit dans un service externe (base, cache), pas dans le conteneur
+| *Disposabilité* (_disposability_) | Démarrage rapide, arrêt propre : un conteneur est *jetable*
+| *Logs* (_logs as event streams_) | Écrits sur la *sortie standard*, traités comme un flux d'événements
+|===
+
+=== Du principe à Kubernetes
+
+[cols="2,2,2"]
+|===
+| Principe | Dans Kubernetes | Dans votre projet
+
+| Config dans l'environnement | ConfigMap, Secret | Séance 2
+| Ressource attachée | Service, DNS | La base de données hors cluster
+| Sans état (_stateless_), jetable (_disposable_) | Deployment, replicas | Supprimer un Pod
+| Observabilité | Logs, métriques, probes | Séances 2 et 3
+|===
+

@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: notifications
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/social?currentSchema=notifications}
+    username: ${SPRING_DATASOURCE_USERNAME:notifications_svc}
+    password: ${SPRING_DATASOURCE_PASSWORD:notifications_pwd}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: notifications
+  liquibase:
+    change-log: classpath:db/changelog/changelog-master.xml
+    default-schema: notifications
+    contexts: ${SPRING_LIQUIBASE_CONTEXTS:}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+users:
+  service-url: ${USERS_SERVICE_URL:http://localhost:8081}
+  http-timeout-ms: ${USERS_HTTP_TIMEOUT_MS:1000}
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,prometheus
+      path-mapping:
+        prometheus: metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true

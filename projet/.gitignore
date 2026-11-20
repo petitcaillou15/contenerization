@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Env / secrets
+.env*
+!.env.example
+.env.local
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build output
+dist/
+build/
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

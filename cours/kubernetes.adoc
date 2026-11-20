@@ -1,0 +1,188 @@
+ifeval::["{docname}" == "kubernetes"]
+:imagesdir: ./images
+= Introduction à Kubernetes
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+endif::[]
+
+== Introduction à Kubernetes
+
+=== Les conteneurs : une longue histoire
+
+[cols="1,4"]
+|===
+| 1979 | `chroot` (Unix V7) : changer la racine du système de fichiers d'un processus
+| 2006-2008 | *cgroups* (limiter les ressources) et *namespaces* (isoler) arrivent dans le noyau Linux, puis *LXC* (2008)
+| 2013 | *Docker* : images, Dockerfile, registry... les conteneurs deviennent *simples*
+| 2015 | Standard *OCI* : format d'image et runtime normalisés
+|===
+
+Docker n'a pas inventé les conteneurs : il les a rendus *accessibles à tous*.
+
+=== De Borg à Kubernetes
+
+[cols="1,4"]
+|===
+| Années 2000 | *Borg* : le système interne de Google pour lancer des milliards de conteneurs
+| 2014 | Google annonce *Kubernetes* en open source (juin)
+| 2015 | Version *1.0* (juillet), création de la *CNCF*
+| 2016 | Kubernetes confié à la CNCF (Linux Foundation)
+| 2022 | Kubernetes 1.24 : *dockershim* supprimé
+|===
+
+* _Kubernetes_ vient du grec « timonier », celui qui tient la barre
+* *K8s* = K + 8 lettres + s
+
+=== Docker et Kubernetes : qui fait quoi ?
+
+* *Docker* (ou containerd) : *construit* et *lance* des conteneurs sur *une* machine
+* *Kubernetes* : *orchestre* des conteneurs sur *plusieurs* machines
+* Kubernetes ne remplace pas Docker : il s'appuie sur un *runtime* (containerd, CRI-O...)
+* Depuis la 1.24, il ne parle plus directement à Docker, mais les *images Docker* fonctionnent toujours (standard OCI)
+
+=== Pourquoi un orchestrateur ?
+
+* Si la machine tombe ?
+* Si on veut 5 copies ?
+* Si on veut mettre à jour sans coupure ?
+* Si 30 services doivent se retrouver entre eux ?
+
+Kubernetes décide *où* lancer vos conteneurs et *veille* à ce qu'ils restent en vie.
+
+=== Architecture d'un cluster
+
+image::archi-cluster.png[]
+
+* *Tout* passe par l'API Kubernetes (`kubectl` ne fait que l'appeler)
+
+=== L'approche déclarative
+
+* Vous décrivez *l'état désiré* (YAML), pas les étapes
+* Kubernetes compare en permanence *état désiré* et *état actuel*
+* S'ils diffèrent : il agit (*reconciliation*)
+
+[source,yaml]
+----
+replicas: 3
+----
+
+=> Si un Pod meurt, il est recréé.
+
+=== Pod, ReplicaSet, Deployment
+
+* *Pod* : plus petite unité, 1 ou plusieurs conteneurs, éphémère
+* *ReplicaSet* : maintient N Pods identiques
+* *Deployment* : gère les ReplicaSets, les mises à jour et les rollbacks
+
+`Deployment` => `ReplicaSet` => `Pod`
+
+*On crée des Deployments, pas des Pods à la main.*
+
+=== Deployment, ReplicaSet, Pods
+
+image::deploy-rs-pods.png[]
+
+* Vous écrivez le *Deployment*
+* Il crée le *ReplicaSet*, qui crée les *Pods*
+* Le nom du ReplicaSet et des Pods est généré à partir du Deployment
+
+=== Pourquoi un ReplicaSet entre les deux ?
+
+Lors d'une *mise à jour* (nouvelle image), le Deployment crée un *nouveau ReplicaSet* et fait basculer progressivement les Pods.
+
+image::deploy-update.png[]
+
+* L'ancien ReplicaSet est *conservé* : c'est ce qui permet le *rollback*
+* À revoir en séance 3
+
+=== Labels et selectors
+
+* *Labels* : paires clé/valeur sur n'importe quel objet (`app: users`)
+* *Selectors* : sélectionnent des objets par leurs labels
+* C'est le *lien* entre Deployment, ReplicaSet, Pods... et bientôt les Services
+
+=== Un premier manifest
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users
+  namespace: mini-reseau
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: users
+  template:
+    metadata:
+      labels:
+        app: users
+    spec:
+      containers:
+        - name: users
+          image: users:1.0
+          ports:
+            - containerPort: 8080
+----
+
+=== Votre cluster
+
+*Conseillé* : *minikube*
+
+* sur la *VM fournie par l'école*
+* ou directement sur votre poste si vous êtes sous *Linux*
+
+*Vous êtes libres* d'en choisir un autre :
+
+* Kubernetes sur votre poste (Docker Desktop, kind, k3s...)
+* un cluster dans le *cloud*, ou un *service managé*
+
+Dans tous les cas, *vous êtes autonomes* : installation, accès, coûts, dépannage.
+
+=== Votre cluster : points d'attention
+
+Si vous sortez de minikube, *c'est à vous de gérer* :
+
+* l'*accès* : le cluster doit être *opérationnel le jour de la soutenance*
+* la *base de données* (hors Kubernetes) doit être *joignable depuis le cluster*
+* vos *images* doivent être *disponibles pour le cluster* (registry)
+* les *coûts* et le *nettoyage* si vous utilisez le cloud
+* le *README* doit expliquer *votre* environnement
+
+=== Avec minikube
+
+[source,bash]
+----
+minikube start
+kubectl get nodes
+----
+
+=== Vos images dans minikube
+
+[source,bash]
+----
+minikube image build -t users:1.0 ./services/users
+----
+
+* Construit l'image *directement dans minikube*
+* Dans vos manifests : un *tag explicite* (`users:1.0`, pas `latest`) et `imagePullPolicy: IfNotPresent`
+* Sinon : `ErrImagePull`, Kubernetes cherche l'image sur un registry
+* Autre cluster : en général, vous *poussez l'image dans un registry* accessible du cluster
+
+=== Premières commandes `kubectl`
+
+[source,bash]
+----
+kubectl create namespace mini-reseau
+kubectl apply -f deployment.yaml
+kubectl get pods -n mini-reseau
+kubectl describe pod <nom> -n mini-reseau
+kubectl logs <nom> -n mini-reseau
+kubectl delete pod <nom> -n mini-reseau   # et regardez !
+kubectl scale deployment users --replicas=3 -n mini-reseau
+----
+

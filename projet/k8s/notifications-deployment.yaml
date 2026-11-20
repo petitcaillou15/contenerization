@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications
+  namespace: mini-reseau
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notifications
+  template:
+    metadata:
+      labels:
+        app: notifications
+    spec:
+      containers:
+        - name: notifications
+          image: mini-reseau-social-notifications:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_DB
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres:5432/$(POSTGRES_DB)?currentSchema=notifications"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: notifications_svc
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom: 
+                secretKeyRef: 
+                  name: app-secrets
+                  key: NOTIFICATIONS_DB_PASSWORD
+          # Sondes de santé (Spring Actuator)
+          startupProbe:
+            httpGet:
+              path: /health/liveness
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

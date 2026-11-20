@@ -1,0 +1,82 @@
+ifeval::["{docname}" == "services-reseau"]
+:imagesdir: ./images
+= Services et réseau Kubernetes
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+endif::[]
+
+== Services et réseau
+
+=== Le réseau entre Pods
+
+* Chaque Pod a sa *propre adresse IP*
+* Les Pods peuvent se joindre *directement*, sans NAT, dans tout le cluster
+* Mais cette IP est *éphémère* : un Pod recréé = une *nouvelle* IP
+
+*On ne s'appuie jamais sur l'IP d'un Pod.*
+
+=== Le Service : une adresse stable
+
+Un *Service* donne un *nom* et une *IP stable* à un groupe de Pods, et répartit les requêtes entre eux (_load balancing_).
+
+image::service-endpoints.png[]
+
+=== Un Service
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: 8080
+----
+
+* `selector` : les Pods ciblés (par *labels*)
+* `port` : le port du Service ; `targetPort` : le port du conteneur
+* Type par défaut : *ClusterIP* (joignable seulement dans le cluster)
+
+=== Les Endpoints
+
+* Le Service garde la liste (_endpoints_) des Pods *prêts* qui correspondent au selector
+* Un Pod supprimé ou pas prêt *disparaît* de la liste
+
+[source,bash]
+----
+kubectl get svc
+kubectl get endpoints web
+----
+
+*Endpoints vides ?* Le selector ne correspond à aucun Pod (ou aucun n'est prêt).
+
+=== La découverte de services (_service discovery_) : le DNS
+
+Kubernetes fournit un *DNS interne*. Un Service est joignable par son nom :
+
+[source]
+----
+web                                 # dans le même namespace
+web.mon-namespace                   # depuis un autre namespace
+web.mon-namespace.svc.cluster.local # nom complet
+----
+
+*Votre application n'a pas besoin de connaître d'IP* : seulement le nom du Service.
+
+=== Tester depuis l'intérieur du cluster
+
+[source,bash]
+----
+kubectl run test --rm -it --image=busybox -n mon-namespace -- sh
+/ # nslookup web
+/ # wget -qO- http://web
+----
+
+Un Pod jetable, dans le *même namespace* : très utile pour diagnostiquer.
+

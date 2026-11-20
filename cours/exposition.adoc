@@ -1,0 +1,96 @@
+ifeval::["{docname}" == "exposition"]
+:imagesdir: ./images
+= Exposition de l'application
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+endif::[]
+
+== Exposer l'application
+
+=== Accéder depuis l'extérieur
+
+Un Service *ClusterIP* n'est joignable que *dans le cluster*. Pour y accéder de l'extérieur :
+
+[cols="1,3"]
+|===
+| *NodePort* | Ouvre un port (30000-32767) sur *chaque nœud*
+| *LoadBalancer* | Demande une IP externe au fournisseur cloud
+| *Ingress* | Règles de *routage HTTP* (_HTTP routing_, _reverse proxy_) vers plusieurs Services
+|===
+
+=== NodePort
+
+[source,yaml]
+----
+spec:
+  type: NodePort
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30080
+----
+
+* Simple, pratique pour tester
+* Un port par Service, pas de nom de domaine, pas de routage par chemin
+
+=== LoadBalancer
+
+* Sur un cloud public : une IP/un load balancer *dédié par Service* (payant)
+* Sur minikube : pas de vrai load balancer, il faut `minikube tunnel`
+* Sur un cluster cloud ou managé : l'IP externe est fournie automatiquement
+
+=== Ingress
+
+Un *point d'entrée HTTP unique* (_single entry point_) qui route vers plusieurs Services.
+
+image::ingress-routage.png[]
+
+=== Ingress : la ressource
+
+[source,yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo
+spec:
+  rules:
+    - host: demo.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: front
+                port:
+                  number: 80
+----
+
+=== Ingress Controller
+
+* Une ressource Ingress *seule ne fait rien*
+* Il faut un *Ingress Controller* (nginx, Traefik...) qui lit les règles et route le trafic
+* Sur minikube :
+
+[source,bash]
+----
+minikube addons enable ingress
+----
+
+=== Accéder à l'application avec minikube
+
+_Les commandes ci-dessous sont celles de minikube. Avec un autre cluster, l'accès dépend de votre environnement (par exemple un LoadBalancer fourni par le cloud)._
+
+[source,bash]
+----
+minikube ip                       # IP du cluster
+minikube service <nom> --url      # URL d'un Service NodePort
+# Ingress : associer le nom d'hôte à l'IP dans /etc/hosts
+echo "$(minikube ip)  demo.local" | sudo tee -a /etc/hosts
+----
+

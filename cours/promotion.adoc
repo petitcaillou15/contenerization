@@ -1,0 +1,70 @@
+ifeval::["{docname}" == "promotion"]
+:imagesdir: ./images
+= Promotion du livrable
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+endif::[]
+
+== Promotion du livrable
+
+=== Le livrable : l'image Docker
+
+Ce que vous *livrez* et *déployez*, c'est une *image* :
+
+* elle contient l'application et ses dépendances
+* elle est *construite une fois*
+* elle est *stockée* dans un registry, avec un *nom et une version* (`users:1.4.2`)
+
+*Promouvoir* un livrable (_artifact promotion_), c'est le faire passer d'un environnement au suivant *sans le reconstruire* :
+
+`dev` -> `test` -> `préproduction` -> `production`
+
+=== Build once, deploy many
+
+image::build-once.png[]
+
+*La même image* dans tous les environnements : seule la *configuration* change.
+
+=== Pourquoi ne pas reconstruire à chaque environnement ?
+
+* Ce qui est *testé* est *exactement* ce qui part en production
+* Pas de « ça marchait en recette » : un rebuild peut changer des dépendances
+* *Traçabilité* : on sait quelle version tourne où
+* *Rollback* fiable : l'ancienne image existe toujours, à l'identique
+
+=== Un livrable immuable (_immutable artifact_)
+
+* Une version = une image, *jamais modifiée* une fois publiée
+* Un *tag de version* explicite : `users:1.4.2`
+* *Pas de `latest`* : on ne sait pas ce qu'il désigne, ni quand il a changé
+* Pour une garantie absolue : le *digest* de l'image (`users@sha256:...`)
+
+=== Ce qui change entre les environnements
+
+[cols="1,1"]
+|===
+| *Ne change pas* | *Change*
+| L'image (code et dépendances) | La configuration (ConfigMap)
+| | Les secrets (Secret)
+| | Le nombre de replicas, les ressources
+| | L'adresse d'accès (Ingress, host)
+|===
+
+C'est pour cela qu'on *sépare l'image et la configuration*.
+
+=== Dans Kubernetes
+
+* Un *Namespace par environnement* est une approche courante
+* Les *mêmes manifests*, avec des *valeurs différentes* (Kustomize, Helm : en approfondissement)
+* *Promouvoir* = changer la référence de l'image dans l'environnement cible, *pas reconstruire*
+* Souvent *automatisé* dans une chaîne CI/CD
+
+=== Dans votre projet
+
+* Versionnez vos images avec un *tag explicite* (pas de `latest`)
+* *Une image, plusieurs configurations* : changer la config ne doit jamais demander un rebuild
+* Approfondissement possible : la *même image* déployée dans *deux Namespaces* avec une configuration différente
+* Expliquez dans le compte rendu *comment* vous avez versionné et promu vos images
+

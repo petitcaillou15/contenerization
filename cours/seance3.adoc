@@ -1,0 +1,121 @@
+:imagesdir: ./images
+
+= Containerization 2
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+
+== TD - Kubernetes : séance 3
+
+Exploitation, diagnostic et finalisation
+
+== Où en êtes-vous ?
+
+*Fin de séance 2* : vous deviez avoir
+
+* l'application *complète* sur Kubernetes
+* configuration externalisée et secrets gérés
+* la base de données externe connectée
+* l'application accessible depuis l'extérieur
+* des probes en place
+
+*Un problème ? Dites-le maintenant.*
+
+== Programme de la séance 3
+
+[cols="1,4"]
+|===
+| 10 min | Où en êtes-vous ?
+| 20 min | Mise à jour d'une application
+| 25 min | Diagnostic Kubernetes
+| 20 min | Observabilité et télémétrie
+| 1h45 | *À vous de jouer* : mise à jour, diagnostic, finalisation
+|===
+
+*Objectif* : un projet *finalisé*, *reproductible*, prêt pour la soutenance.
+
+include::mise-a-jour.adoc[]
+
+include::diagnostic.adoc[]
+
+include::telemetrie.adoc[]
+
+== À vous de jouer !
+
+=== Objectif de la séance
+
+Disposer d'un projet *finalisé*, *reproductible* et *prêt à être présenté*.
+
+=== Mise à jour et diagnostic
+
+. Récupérez la *version 2* de l'application : `git fetch upstream` puis `git merge upstream/v2` (lisez le `CHANGELOG.md`)
+. Construisez les nouvelles images avec un *nouveau tag*, mettez à jour vos Deployments
+. Observez le *rolling update* : le pied de page de l'application affiche la version de chaque composant
+. Récupérez la *version 3* (`upstream/v3`), construisez, déployez
+. Quelque chose ne va pas ? *Diagnostiquez* : `get` -> `describe` -> `logs`
+. Rétablissez le service : *correction* ou *rollback*
+
+=== Finalisation du projet
+
+. Finaliser les *manifests*
+. Compléter le *README* (construire, déployer, accéder, vérifier)
+. Finaliser le *schéma d'architecture*
+. Rédiger le *compte rendu* : une section par partie du cahier des charges (traitée ou non traitée), une section sur les approfondissements
+. Vérifier vos *choix techniques* : saurez-vous les justifier ?
+. Réaliser vos *approfondissements*
+. Vérifier que vous pouvez *afficher les logs et une métrique*
+. Construire *les images des 3 versions* et vérifier que vous savez les déployer
+
+=== Test de reproductibilité
+
+Le test final :
+
+. *Supprimez complètement le Namespace*
+. *Redéployez* l'application *uniquement* à partir du dépôt et de la documentation
+. Tout fonctionne ? Sinon, votre README est incomplet !
+
+*Seule la branche `main` est évaluée*, à la date limite : *23/11 à 13h30 précises*.
+
+=== À préparer avant la soutenance
+
+Lors de la soutenance, vous devrez être capables de :
+
+* *déployer les 3 versions* de l'application : la *version initiale*, la *version évoluée* (v2) et la *version KO* (v3)
+* donc : les *images de chaque version doivent déjà être construites*, avant de passer
+* *montrer le code* (Dockerfiles, manifests, configuration)
+* *regarder les logs* du déploiement
+* *démontrer que l'application fonctionne*
+
+*Testez ce parcours en entier, avant de passer.*
+
+=== Pour que la soutenance se passe bien
+
+* Votre *cluster Kubernetes* est démarré, accessible et fonctionne (`kubectl get nodes`)
+* La *base de données* (docker-compose séparé) est démarrée, avec ses données
+* Les images ont un *tag de version explicite* (`1.0`, `2.0`, `3.0`), pas de `latest`
+* Vous savez *passer d'une version à l'autre* : mise à jour et *rollback*
+* Vos *commandes de déploiement sont prêtes* (script ou README) : pas de recherche en direct
+* L'application est *accessible depuis le navigateur*, vérifié avant de passer
+* Tout est *poussé sur `main`* : testez un *clone propre* du dépôt
+* *Répartissez-vous la parole* : chacun doit pouvoir intervenir et répondre
+* *Minutez-vous* : le temps de passage est limité
+
+=== Préparer la démonstration
+
+* Architecture en quelques minutes
+* Choix techniques *justifiables*
+* Logs et métriques *prêts à être montrés*
+* *Chacun* doit pouvoir expliquer l'ensemble de la solution
+
+== Fin de séance : où en êtes-vous ?
+
+* [ ] Mise à jour et rollback testés
+* [ ] Un diagnostic réalisé
+* [ ] Logs et métrique affichables
+* [ ] README, schéma et compte rendu à jour
+* [ ] Test de reproductibilité réussi
+* [ ] Images des 3 versions construites, parcours de déploiement testé
+* [ ] Tout est sur la branche `main`, avant le rendu : *23/11 à 13h30 précises*
+
+*Prochaine séance* : soutenances.

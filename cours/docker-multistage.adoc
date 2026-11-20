@@ -1,0 +1,122 @@
+ifeval::["{docname}" == "docker-multistage"]
+:imagesdir: ./images
+= Docker : multi-stage build
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+endif::[]
+
+== Docker : multi-stage build
+
+=== Un Dockerfile naïf
+
+Le Dockerfile du service `users` que vous avez reçu :
+
+[source,dockerfile]
+----
+FROM maven:3.9-eclipse-temurin-21
+COPY . /app
+WORKDIR /app
+RUN apt-get update && apt-get install -y curl vim git
+RUN mvn clean package -DskipTests
+EXPOSE 8080
+CMD java -jar target/*.jar
+----
+
+Ça marche. Mais...
+
+=== Les problèmes
+
+* L'image contient *Maven*, le JDK, le code source, le cache `~/.m2`
+* L'image est *énorme* : `docker images` (~830 Mo pour `users`, ~1,5 Go pour le frontend)
+* Surface d'attaque plus grande (outils inutiles, utilisateur `root`)
+* Chaque changement de code *retélécharge toutes les dépendances*
+
+=== Le principe, sur un autre exemple
+
+Une petite appli *Go* (rien à voir avec votre projet : à vous d'adapter le principe).
+
+Avant : *un seul stage*.
+
+[source,dockerfile]
+----
+FROM golang:1.22
+WORKDIR /app
+COPY . .
+RUN go build -o server .
+EXPOSE 8080
+CMD ["./server"]
+----
+
+=== Après : multi-stage
+
+[source,dockerfile]
+----
+# --- build ---
+FROM golang:1.22 AS build
+WORKDIR /app
+COPY go.mod ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o server .
+
+# --- run ---
+FROM alpine:3.20
+COPY --from=build /app/server /server
+USER 1000
+EXPOSE 8080
+CMD ["/server"]
+----
+
+*Build* et *runtime* sont séparés : seul le *dernier stage* est livré.
+
+=== Avant / après
+
+[cols="2,2,2"]
+|===
+| | Avant | Après
+
+| *Taille* | *896 Mo* | *14,8 Mo*
+| Compilateur Go | présent | absent
+| gcc, make, git, curl | présents | absents
+| `apt-get` | présent | absent
+| Code source (`/app`) | présent | absent
+| Utilisateur | `root` | `1000`
+|===
+
+=== Le cache et l'ordre des layers
+
+* Chaque instruction = un *layer*, mis en cache
+* Un layer invalidé *invalide tous les suivants*
+* Donc : du *moins changeant* au *plus changeant*
+
+[source,dockerfile]
+----
+COPY go.mod ./       # change rarement
+RUN go mod download  # => en cache
+COPY . .             # change tout le temps
+RUN go build -o server .
+----
+
+=== `.dockerignore`
+
+[source]
+----
+.git/
+.env
+*.log
+----
+
+* Contexte de build plus petit, build plus rapide
+* Évite d'embarquer des fichiers inutiles *ou sensibles* (`.env`...)
+* *À vous de décider* ce qu'il faut exclure pour chaque composant
+
+=== Ce que vous devez savoir justifier
+
+* Pourquoi telle image de base ?
+* Qu'y a-t-il dans l'image finale, et pourquoi ?
+* Comment ordonner les layers pour le cache ?
+* Pas de secret dans l'image
+* Mesurer : `docker images`, `docker history <image>`
+

@@ -1,0 +1,56 @@
+ifeval::["{docname}" == "diagnostic"]
+:imagesdir: ./images
+= Diagnostic Kubernetes
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+endif::[]
+
+== Diagnostic Kubernetes
+
+=== La méthode
+
+Toujours dans cet ordre, du plus large au plus précis :
+
+. *État* : `kubectl get`
+. *Détails et événements* : `kubectl describe`
+. *Logs* : `kubectl logs`
+. *À l'intérieur* : `kubectl exec`, un Pod de test
+
+[source,bash]
+----
+kubectl get pods -n <namespace>
+kubectl describe pod <nom> -n <namespace>
+kubectl logs <nom> -n <namespace>
+kubectl logs <nom> --previous -n <namespace>
+kubectl get events --sort-by=.lastTimestamp -n <namespace>
+----
+
+=== Lire l'état d'un Pod
+
+[cols="2,3"]
+|===
+| `Pending` | Aucun nœud ne peut l'accueillir (ressources, volumes...)
+| `ImagePullBackOff` / `ErrImagePull` | L'image est introuvable : nom, tag, registry, `imagePullPolicy`
+| `CrashLoopBackOff` | Le conteneur démarre puis plante en boucle : regarder les *logs*
+| `CreateContainerConfigError` | ConfigMap ou Secret manquant ou clé inconnue
+| `Running` mais `0/1` Ready | La *readiness probe* échoue
+| `OOMKilled` | Le conteneur a dépassé sa limite mémoire
+|===
+
+=== Un problème de Service ou de réseau
+
+. Le Service existe-t-il ? `kubectl get svc`
+. A-t-il des *Endpoints* ? `kubectl get endpoints <svc>`
+. Vide ? Le *selector* correspond-il aux *labels* des Pods ? Les Pods sont-ils *Ready* ?
+. Le nom est-il résolu ? Un Pod de test : `nslookup <service>`
+. Le bon *port* / `targetPort` ?
+
+=== Un problème de configuration ou de probes
+
+* Variable absente ? `kubectl exec <pod> -- env`
+* Mauvaise valeur dans un ConfigMap/Secret ? `kubectl get cm,secret`, `kubectl describe`
+* `RESTARTS` qui augmente : la *liveness* échoue (voir les events)
+* Pas `Ready` : la *readiness* échoue (voir `describe`, section _Events_)
+

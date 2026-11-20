@@ -1,0 +1,8 @@
+# résultat de compilation local 
+target/
+
+.git/
+.idea/
+.vscode/
+*.log
+.env

@@ -1,0 +1,89 @@
+### Mini réseau social — requêtes de test (via gateway :8081)
+@base = http://localhost:8081/api
+
+### Health
+GET {{base}}/users/health
+###
+GET {{base}}/posts/health
+###
+GET {{base}}/notifications/health
+
+### 1. Inscription utilisateur A
+POST {{base}}/users/register
+Content-Type: application/json
+
+{ "pseudo": "alice", "email": "alice@example.com", "password": "password" }
+
+### 2. Inscription utilisateur B
+POST {{base}}/users/register
+Content-Type: application/json
+
+{ "pseudo": "bob", "email": "bob@example.com", "password": "password" }
+
+### 3. Connexion A -> capture le token
+# @name loginA
+POST {{base}}/users/login
+Content-Type: application/json
+
+{ "email": "alice@example.com", "password": "password" }
+
+> {% client.global.set("token", response.body.token); %}
+
+### 4. Profil public de A
+# Segment doublé : le gateway retire /api/users/, la route du service est /users/{id}
+GET {{base}}/users/users/1
+
+### 5. A modifie sa bio
+PATCH {{base}}/users/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "bio": "Bonjour, ceci est Alice." }
+
+### 6. A crée un post
+POST {{base}}/posts/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "title": "Mon premier post", "content": "Contenu de démonstration." }
+
+### 7. Fil d'actualité (public, paginé)
+GET {{base}}/posts/posts?page=0&limit=20
+
+### 8. Détail d'un post + commentaires
+GET {{base}}/posts/posts/1
+
+### 9. Connexion B -> token de B
+# @name loginB
+POST {{base}}/users/login
+Content-Type: application/json
+
+{ "email": "bob@example.com", "password": "password" }
+
+> {% client.global.set("tokenB", response.body.token); %}
+
+### 10. B commente le post de A  (déclenche l'événement Redis comment.created)
+POST {{base}}/posts/posts/1/comments
+Authorization: Bearer {{tokenB}}
+Content-Type: application/json
+
+{ "content": "Super post !" }
+
+### 11. A consulte ses notifications (la notif du commentaire de B doit apparaître)
+GET {{base}}/notifications/notifications
+Authorization: Bearer {{token}}
+
+### 12. A marque la notification 1 comme lue
+PATCH {{base}}/notifications/notifications/1/read
+Authorization: Bearer {{token}}
+
+### 13. A supprime son post
+DELETE {{base}}/posts/posts/1
+Authorization: Bearer {{token}}
+
+### Observabilité — métriques Prometheus
+GET {{base}}/users/metrics
+###
+GET {{base}}/posts/metrics
+###
+GET {{base}}/notifications/metrics

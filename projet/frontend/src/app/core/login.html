@@ -1,0 +1,12 @@
+<article class="auth-card">
+  <h1>Connexion</h1>
+  <form (ngSubmit)="submit()">
+    <label>Email <input name="email" type="email" [(ngModel)]="email" required /></label>
+    <label>Mot de passe <input name="password" type="password" [(ngModel)]="password" required /></label>
+    <button type="submit">Se connecter</button>
+  </form>
+  @if (error) {
+    <p class="error">{{ error }}</p>
+  }
+  <p><a routerLink="/register">Créer un compte</a></p>
+</article>

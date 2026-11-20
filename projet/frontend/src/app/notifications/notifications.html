@@ -1,0 +1,13 @@
+<h1>Notifications</h1>
+<ul class="notif-list">
+  @for (n of list(); track n.id) {
+    <li [class.read]="n.read">
+      <span>{{ summary(n) }} <small>{{ n.created_at | date: 'short' }}</small></span>
+      @if (!n.read) {
+        <button (click)="markRead(n.id)">Marquer lu</button>
+      }
+    </li>
+  } @empty {
+    <li>Aucune notification.</li>
+  }
+</ul>

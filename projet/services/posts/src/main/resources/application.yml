@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: posts
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/social?currentSchema=posts}
+    username: ${SPRING_DATASOURCE_USERNAME:posts_svc}
+    password: ${SPRING_DATASOURCE_PASSWORD:posts_pwd}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: posts
+  liquibase:
+    change-log: classpath:db/changelog/changelog-master.xml
+    default-schema: posts
+    contexts: ${SPRING_LIQUIBASE_CONTEXTS:}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+# Dépendance synchrone vers users : résolue PAR NOM DE SERVICE via variable d'env.
+users:
+  service-url: ${USERS_SERVICE_URL:http://localhost:8081}
+  http-timeout-ms: ${USERS_HTTP_TIMEOUT_MS:1000}
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,prometheus
+      path-mapping:
+        prometheus: metrics
+  endpoint:
+    health:
+      show-details: always
+      # --- santé dégradée (spec §2.3.1) ---
+      # DEGRADED s'insère entre DOWN et OUT_OF_SERVICE et reste mappé sur HTTP 200 :
+      # users injoignable dégrade /health sans sortir le pod du service.
+      status:
+        order: DOWN,DEGRADED,OUT_OF_SERVICE,UNKNOWN,UP
+        http-mapping:
+          DEGRADED: 200
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  health:
+    # Redis n'est qu'un canal de publication best-effort (la publication de
+    # comment.created est déjà tolérante à la panne, cf. CommentService).
+    # Une indispo Redis ne doit PAS sortir le pod du service -> contributeur désactivé.
+    redis:
+      enabled: false

@@ -1,0 +1,302 @@
+openapi: 3.1.0
+info:
+  title: Mini réseau social — service users
+  version: 1.0.0
+  description: >
+    Inscription, authentification (JWT HS256) et profils publics.
+    Ce service est le seul à connaître le secret JWT : il émet les tokens et
+    expose `/verify` (interne, hors de ce contrat) pour que `posts` et
+    `notifications` les valident.
+
+
+    Toutes les routes sont décrites **derrière le gateway**. `servers.url` inclut
+    déjà le préfixe `/api/users` ; le gateway le retire avant de relayer au
+    service. Les chemins commençant par `/users/...` produisent donc une URL
+    publique à segment doublé, ex. `GET /api/users/users/1`.
+servers:
+  - url: http://{host}/api/users
+    variables:
+      host:
+        default: localhost:8081
+        description: hôte:port du gateway
+# Public par défaut ; chaque opération protégée redéclare `security: [bearerAuth]`.
+security: []
+tags:
+  - name: auth
+    description: Inscription et connexion (public)
+  - name: profils
+    description: Consultation et édition de profil
+  - name: exploitation
+    description: Santé
+
+paths:
+  /register:
+    post:
+      tags: [auth]
+      operationId: register
+      summary: Inscription d'un nouvel utilisateur
+      description: Crée un compte. Aucune authentification. Ne renvoie pas de corps.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              pseudo: alice
+              email: alice@example.com
+              password: password
+      responses:
+        '201':
+          description: Compte créé.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Pseudo ou email déjà utilisé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: pseudo or email already used
+
+  /login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Connexion, émission d'un JWT
+      description: Renvoie un JWT HS256 (durée de vie 24 h par défaut).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: alice@example.com
+              password: password
+      responses:
+        '200':
+          description: Authentification réussie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicHNldWRvIjoiYWxpY2UiLCJpYXQiOjE3ODgzOTM2MDAsImV4cCI6MTc4ODQ4MDAwMH0.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Email ou mot de passe invalide.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: invalid email or password
+
+  /users/{id}:
+    get:
+      tags: [profils]
+      operationId: getPublicProfile
+      summary: Profil public d'un utilisateur
+      description: >
+        URL publique : `GET /api/users/users/{id}` (segment doublé).
+        Ne contient ni email ni hash de mot de passe. Public.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Profil trouvé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProfile'
+              example:
+                id: 1
+                pseudo: alice
+                bio: Bonjour, ceci est Alice.
+                created_at: '2026-09-02T13:50:43.618Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/me:
+    patch:
+      tags: [profils]
+      operationId: updateMyBio
+      summary: Modifier sa propre bio
+      description: >
+        URL publique : `PATCH /api/users/users/me` (segment doublé).
+        Met à jour uniquement la bio du porteur du token et renvoie le profil
+        public à jour.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBioRequest'
+            example:
+              bio: Bonjour, ceci est Alice.
+      responses:
+        '200':
+          description: Bio mise à jour.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProfile'
+              example:
+                id: 1
+                pseudo: alice
+                bio: Bonjour, ceci est Alice.
+                created_at: '2026-09-02T13:50:43.618Z'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /health:
+    get:
+      tags: [exploitation]
+      operationId: usersHealth
+      summary: Santé du service (Spring Boot Actuator)
+      description: Public. URL publique `GET /api/users/health`.
+      responses:
+        '200':
+          description: Service en vie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: UP
+                components:
+                  db:
+                    status: UP
+                  ping:
+                    status: UP
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'En-tête `Authorization: Bearer <token>` obtenu via POST /login.'
+
+  responses:
+    Unauthorized:
+      description: Token absent, invalide ou expiré.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: unauthorized
+    NotFound:
+      description: Ressource inexistante.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: user 42 not found
+    ValidationError:
+      description: Corps de requête invalide. `error` = premier champ fautif.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: password size must be between 6 and 100
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [pseudo, email, password]
+      properties:
+        pseudo:
+          type: string
+          minLength: 1
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+      additionalProperties: false
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+      additionalProperties: false
+
+    LoginResponse:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: JWT HS256. Claims `sub` (id utilisateur), `pseudo`, `iat`, `exp`.
+
+    UpdateBioRequest:
+      type: object
+      properties:
+        bio:
+          type: [string, 'null']
+          maxLength: 500
+      additionalProperties: false
+
+    PublicProfile:
+      type: object
+      required: [id, pseudo, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        pseudo:
+          type: string
+        bio:
+          type: [string, 'null']
+          maxLength: 500
+        created_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+      additionalProperties: false
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, OUT_OF_SERVICE, UNKNOWN]
+        components:
+          type: object
+          additionalProperties: true
+      additionalProperties: true

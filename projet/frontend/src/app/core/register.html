@@ -1,0 +1,13 @@
+<article class="auth-card">
+  <h1>Créer un compte</h1>
+  <form (ngSubmit)="submit()">
+    <label>Pseudo <input name="pseudo" [(ngModel)]="pseudo" required /></label>
+    <label>Email <input name="email" type="email" [(ngModel)]="email" required /></label>
+    <label>Mot de passe <input name="password" type="password" [(ngModel)]="password" required /></label>
+    <button type="submit">S'inscrire</button>
+  </form>
+  @if (error) {
+    <p class="error">{{ error }}</p>
+  }
+  <p><a routerLink="/login">J'ai déjà un compte</a></p>
+</article>

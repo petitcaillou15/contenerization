@@ -1,0 +1,46 @@
+# Généré au démarrage par envsubst (image nginx officielle, /etc/nginx/templates/).
+# Aucune logique métier : uniquement du routage. Upstreams résolus par variable d'env.
+
+server {
+    listen 80;
+    server_name _;
+
+    # Sonde de vivacité du gateway lui-même.
+    location = /healthz {
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+
+    # CORS minimal (front servi sur une autre origine en dev : ng serve:4200).
+    add_header Access-Control-Allow-Origin  "${CORS_ALLOW_ORIGIN}" always;
+    add_header Access-Control-Allow-Methods "GET, POST, PATCH, DELETE, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Authorization, Content-Type" always;
+
+    # Pré-vol CORS : répondre 204 sans toucher les services.
+    if ($request_method = OPTIONS) {
+        return 204;
+    }
+
+    # Slash final des deux côtés => le préfixe /api/<svc> est retiré.
+    # POST /api/users/register  ->  POST http://users:8080/register
+    location /api/users/ {
+        proxy_pass http://${USERS_UPSTREAM}/;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api/posts/ {
+        proxy_pass http://${POSTS_UPSTREAM}/;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api/notifications/ {
+        proxy_pass http://${NOTIFICATIONS_UPSTREAM}/;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

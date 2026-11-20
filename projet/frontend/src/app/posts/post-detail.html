@@ -1,0 +1,28 @@
+@if (post(); as p) {
+  <article>
+    <h1>{{ p.title }}</h1>
+    <small>par #{{ p.author_id }} — {{ p.created_at | date: 'short' }}</small>
+    <p>{{ p.content }}</p>
+    @if (canDelete()) {
+      <button class="secondary" (click)="remove()">Supprimer</button>
+    }
+  </article>
+
+  <h2>Commentaires</h2>
+  <ul class="notif-list">
+    @for (c of p.comments; track c.id) {
+      <li><span>#{{ c.author_id }} : {{ c.content }} <small>{{ c.created_at | date: 'short' }}</small></span></li>
+    } @empty {
+      <li>Aucun commentaire.</li>
+    }
+  </ul>
+
+  @if (auth.isLoggedIn()) {
+    <form (ngSubmit)="addComment()" class="inline-form">
+      <input name="c" placeholder="Votre commentaire" [(ngModel)]="newComment" required />
+      <button type="submit">Commenter</button>
+    </form>
+  }
+} @else {
+  <p>Chargement…</p>
+}

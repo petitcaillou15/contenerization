@@ -1,0 +1,133 @@
+# Stack de référence, fonctionnelle bout-en-bout.
+# Navigateur : http://localhost:8080 (frontend, plan 5)
+# API curl/Postman : http://localhost:8081/api/...
+name: mini-reseau-social
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./db/00-init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  users:
+    build: ./services/users
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=users
+      SPRING_DATASOURCE_USERNAME: users_svc
+      SPRING_DATASOURCE_PASSWORD: ${USERS_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      SPRING_LIQUIBASE_CONTEXTS: ${SEED_ENABLED:+demo}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  posts:
+    build: ./services/posts
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=posts
+      SPRING_DATASOURCE_USERNAME: posts_svc
+      SPRING_DATASOURCE_PASSWORD: ${POSTS_DB_PASSWORD}
+      USERS_SERVICE_URL: ${USERS_SERVICE_URL}
+      USERS_HTTP_TIMEOUT_MS: ${USERS_HTTP_TIMEOUT_MS}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      SPRING_LIQUIBASE_CONTEXTS: ${SEED_ENABLED:+demo}
+    # NB: pas de dépendance à users healthy -> permet `docker compose stop users`
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  notifications:
+    build: ./services/notifications
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?currentSchema=notifications
+      SPRING_DATASOURCE_USERNAME: notifications_svc
+      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATIONS_DB_PASSWORD}
+      USERS_SERVICE_URL: ${USERS_SERVICE_URL}
+      USERS_HTTP_TIMEOUT_MS: ${USERS_HTTP_TIMEOUT_MS}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      SPRING_LIQUIBASE_CONTEXTS: ${SEED_ENABLED:+demo}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "8081:80"
+    environment:
+      USERS_UPSTREAM: ${USERS_UPSTREAM}
+      POSTS_UPSTREAM: ${POSTS_UPSTREAM}
+      NOTIFICATIONS_UPSTREAM: ${NOTIFICATIONS_UPSTREAM}
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN}
+    depends_on:
+      - users
+      - posts
+      - notifications
+    healthcheck:
+      # 127.0.0.1 et pas "localhost" : le wget de busybox résout "localhost" en ::1
+      # (IPv6) d'abord, or nginx n'écoute qu'en IPv4 -> "Connection refused".
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    environment:
+      GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM}
+    depends_on:
+      - gateway
+    healthcheck:
+      # 127.0.0.1 (pas "localhost") : le wget de busybox tente ::1 d'abord.
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:

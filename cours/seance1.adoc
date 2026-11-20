@@ -1,0 +1,266 @@
+:imagesdir: ./images
+
+= Containerization 2
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+
+== TD - Kubernetes
+
+== Qui suis-je ?
+
+* Emile Chomton, SQLI
+* Ancien TSE : Sorti en 2019, stage DevOps SQLI
+* Aujourd'hui expert technique DevOps / Infra / IA (IA Factory)
+* Intervenant DevOps - Conteneurisation  
+* Nouveau Module de TD Containerization 2 : Kubernetes
+
+== Considéré comme acquis
+
+* Les *bases de Docker* : images, conteneurs, Dockerfile, `docker compose`
+* Une *bonne connaissance de Git* : commits, branches, merge, remotes
+* L'utilisation de la *VM fournie par l'école* (ou de Linux)
+
+Un doute sur l'un de ces points ? *Dites-le dès aujourd'hui.*
+
+== Le projet
+
+=== L'application
+
+Un *mini réseau social* : utilisateurs, posts, commentaires, notifications.
+
+*Vous ne développez pas l'application* : vous recevez un code *qui fonctionne déjà*.
+
+Pour le vérifier, un simple `docker compose` suffit :
+
+[source,bash]
+----
+cp .env.example .env
+docker compose up --build
+----
+
+Frontend sur `http://localhost:8080`, API sur `http://localhost:8081`.
+
+*Votre travail* : conteneurisation, déploiement Kubernetes, communication, configuration.
+
+=== Architecture de l'application
+
+image::archi-app.png[]
+
+=== Architecture cible
+
+*La base de données reste en dehors de Kubernetes.*
+
+image::archi-cible.png[]
+
+* Une de vos premières tâches : *sortir la base* dans un `docker-compose` à part
+* Comment les Pods la joignent : *plus tard* (séance 2)
+
+=== Cahier des charges (1/2)
+
+. *Images Docker* : multi-stage, `.dockerignore`, légères, reproductibles
+. *Déploiement K8s* : Deployments (pas de Pods à la main), *Namespace dédié*, auto-réparation
+. *Communication* : pas d'IP de Pods, découverte de services, accessible depuis l'extérieur
+
+=== Cahier des charges (2/2)
+
+[start=4]
+. *Configuration* : aucune reconstruction d'image pour changer de config, configuration vs. secrets, *aucun secret dans une image*
+. *Disponibilité* : health checks (probes), au moins un composant avec plusieurs replicas
+. *Données* : la base de données reste *hors de Kubernetes* ; ses données doivent être *persistées*
+. *Observabilité* : être capable de *montrer les logs* et *au moins une métrique* (ELK, Prometheus... : facultatif)
+
+=== Livrable
+
+Un *dépôt Git* contenant :
+
+* le code fourni
+* les Dockerfiles
+* les manifests Kubernetes
+* les éventuels scripts
+* un `README.md` + un *schéma de l'architecture finale*
+* un dossier `compte-rendu/` (`.md` ou `.adoc`) : *ce qui a été fait et comment*
+
+*Seule la branche `main` est évaluée* (code, documents *et historique*).
+
+*Date limite de rendu : 23/11 à 13h30 précises*
+
+=== README et compte rendu
+
+*Le README* doit permettre à quelqu'un d'extérieur de : *construire*, *déployer*, *accéder*, *vérifier*.
+
+*Des modèles* de README et de compte rendu sont fournis dans le dépôt.
+
+*Le compte rendu* :
+
+* *une section par partie* du cahier des charges (7 parties)
+* *traitée*, ou explicitement *« non traitée »*
+* une section dédiée aux *approfondissements*
+
+=== Pour aller plus loin
+
+Non obligatoire, mais *valorisé si pertinent et maîtrisé* :
+
+requests/limits, HPA, rolling update/rollback, Helm, NetworkPolicy, RBAC, sécurité des conteneurs, monitoring, logs, CI/CD, secrets avancés...
+
+=== Soutenance (séance 4)
+
+* Présentation rapide de l'architecture et de vos choix
+* Démonstration : *déploiement des 3 versions* (initiale, évoluée, KO), code, logs
+* *Logs* et *au moins une métrique* d'un composant
+* Questions Docker / Kubernetes
+* Une manipulation ou un diagnostic *sur votre environnement*
+* *Questions individuelles* : chacun doit pouvoir expliquer l'ensemble
+
+=== Évaluation
+
+*Une note par groupe* :
+
+* L'application *fonctionne sur votre cluster Kubernetes* et respecte le cahier des charges
+* Qualité de la solution et reproductibilité (README, schéma, compte rendu)
+* *Historique Git propre*, et pas une seule personne qui commit tout
+* Soutenance : démo, diagnostic, *questions / réponses bien gérées*
+
+*Bonus* : les approfondissements (_« pour aller plus loin »_), s'ils sont pertinents et maîtrisés.
+
+*Notes individuelles* : elles *pourront être modifiées* si l'on constate que certaines personnes ont nettement moins participé (commits, réponses aux questions).
+
+*Seule la branche `main` du dépôt est analysée.*
+
+== L'IA dans ce projet
+
+* Vous *pouvez* l'utiliser (ChatGPT, Copilot, Claude...)
+* Mais *vous devez comprendre* ce que vous faites et ce que vous livrez
+* Le test : *pouvez-vous expliquer chaque ligne* de vos Dockerfiles et de vos manifests ?
+* Une réponse de l'IA qui « marche » mais que vous ne comprenez pas, *ce n'est pas un travail terminé*
+* À la soutenance : questions *individuelles*, manipulation et diagnostic en direct, choix à justifier
+
+== Posez vos questions
+
+Je suis à la fois :
+
+* *Le client* : je précise le besoin et le cahier des charges
+* *L'expert technique* : je vous oriente, je vous aide à diagnostiquer
+
+* *Demandez des précisions* dès que quelque chose est flou
+* Mieux vaut *demander que supposer*
+
+== Le déroulé du projet : 4 séances
+
+[cols="1,1,1,3"]
+|===
+| Séance | Date | Durée | Objectif
+
+| *1* | 07/10 | 4h30 | Images Docker propres + premiers déploiements
+| *2* | 21/10 | 4h30 | Réseau, configuration, exposition, probes : première version complète
+| *3* | 23/11 | 3h | Mise à jour, diagnostic, finalisation, reproductibilité
+| *4* | 23/11 | 3h | *Soutenances*
+|===
+
+Du travail personnel pourra être nécessaire entre les séances.
+
+== Les jalons
+
+[cols="1,3"]
+|===
+| Fin S1 (07/10) | Repo créé, images docker propres, DB dans sa stack docker compose séparée, premiers composants déployés
+| Fin S2 (21/10) | Application complète sur Kubernetes (le *socle obligatoire*)
+| Fin S3 (23/11) | Projet finalisé, README, schéma, reproductible. *Rendu final : 23/11 à 13h30*
+| S4 (23/11) | Soutenance + démo
+|===
+
+== Programme de la séance 1
+
+[cols="1,4"]
+|===
+| 10 min | Intro et jalons
+| 15 min | Présentation du projet
+| 25 min | Docker : multi-stage build
+| 40 min | Introduction à Kubernetes
+| 15 min | Création de votre repo GitLab
+| 2h45 | *À vous de jouer* (en autonomie, pauses libres)
+|===
+
+include::docker-multistage.adoc[]
+
+include::kubernetes.adoc[]
+
+== Votre repo GitLab
+
+=== À faire maintenant (15 min)
+
+. Constituez vos groupes (*2 ou 3* étudiants)
+. *Un* membre crée le projet sur le GitLab de l'école
+. Ajoutez *vos camarades* (Maintainer) et *@chomton.emile* (pour suivi et notation)
+. *Clonez* le dépôt du cours
+. Premier commit (remplir le tableau des membres du `README.md`) + push
+
+5 ou 6 groupes maximum !
+
+=== Ajouter votre `origin`
+
+Après le clone, `origin` pointe vers le *dépôt du cours*. À la place :
+
+[source,bash]
+----
+git remote rename origin upstream   # le dépôt du cours : pour récupérer les nouvelles versions
+git remote add origin <url-de-VOTRE-depot>
+git push -u origin main
+----
+
+* *`origin`* = votre dépôt de groupe : pour le rendu
+* *`upstream`* = le dépôt du cours : pour le cours et les futures versions
+* `main` = branche principale du dépôt de groupe, qui sera évaluée
+
+== À vous de jouer !
+
+=== Objectif de la séance
+
+Obtenir des *images propres*, une *base de données externe* qui fonctionne et persiste, et un *premier déploiement fonctionnel* de plusieurs composants.
+
+*Initialiser votre repo.*
+
+=== Ce qu'il y a à faire en séance 1
+
+. Créer votre *repo GitLab* et y pousser le code (branche `main`)
+. Améliorer les Dockerfiles (multi-stage, `.dockerignore`)
+. Construire les images
+. *Sortir PostgreSQL* dans un `docker-compose` séparé, le faire fonctionner, et vérifier que les *données sont persistées* (supprimez et recréez le conteneur : sont-elles toujours là ?)
+. Créer un *Namespace*
+. Écrire les premiers *Deployments*
+. Déployer les premiers composants
+. Supprimer un Pod : il revient tout seul ?
+. Passer à plusieurs *replicas*
+. Découvrir les *Services* : premières communications entre composants
+
+=== Bonnes pratiques
+
+* Un dossier `k8s/` avec un fichier par composant
+* *Commitez régulièrement*
+* Notez vos commandes : elles serviront au README
+* Pas de secret dans les images ni dans le dépôt en clair
+* En cas d'erreur : `kubectl describe` et `kubectl logs`
+
+=== Aide-mémoire
+
+[source,bash]
+----
+minikube image build -t users:1.0 ./services/users
+minikube image ls
+kubectl get all -n mini-reseau
+kubectl apply -f k8s/
+kubectl rollout status deployment/users -n mini-reseau
+kubectl delete -f k8s/
+----
+
+== Fin de séance : où en êtes-vous ?
+
+* [ ] Repo créé, partagé, premiers commits
+* [ ] Images Docker construites et propres
+* [ ] PostgreSQL dans un docker-compose séparé, données persistées
+* [ ] Namespace + premiers Deployments
+* [ ] Un Pod supprimé est recréé
+* [ ] Plusieurs replicas testés
+
+*Prochaine séance* : réseau, configuration, exposition, probes.

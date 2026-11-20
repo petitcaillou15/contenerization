@@ -1,0 +1,19 @@
+@if (profile(); as p) {
+  <article>
+    <h1>{{ p.pseudo }}</h1>
+    <small>Inscrit le {{ p.created_at | date: 'shortDate' }}</small>
+    @if (isMe()) {
+      <form (ngSubmit)="save()" class="inline-form">
+        <label>Bio <textarea name="bio" [(ngModel)]="bio" maxlength="500"></textarea></label>
+        <button type="submit">Enregistrer</button>
+        @if (saved) {
+          <span class="ok">enregistré</span>
+        }
+      </form>
+    } @else {
+      <p>{{ p.bio || 'Pas de bio.' }}</p>
+    }
+  </article>
+} @else {
+  <p>Chargement…</p>
+}

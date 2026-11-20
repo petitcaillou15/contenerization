@@ -1,0 +1,124 @@
+:imagesdir: ./images
+
+= Containerization 2
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+
+== TD - Kubernetes : séance 2
+
+Réseau, configuration et exposition de l'application
+
+== Où en êtes-vous ?
+
+*Fin de séance 1* : vous deviez avoir
+
+* un repo GitLab avec le code, sur la branche `main`
+* des images Docker propres
+* PostgreSQL dans un `docker-compose` séparé, avec des données persistées
+* un Namespace et les premiers Deployments
+* un Pod supprimé qui est recréé, et des replicas
+
+*Un problème ? Dites-le maintenant.*
+
+== Programme de la séance 2
+
+[cols="1,4"]
+|===
+| 10 min | Où en êtes-vous ?
+| 10 min | Applications cloud-native
+| 25 min | Services et réseau Kubernetes
+| 20 min | Configuration et secrets
+| 15 min | Promotion du livrable
+| 25 min | Exposition de l'application
+| 20 min | Disponibilité et probes
+| 2h25 | *À vous de jouer* (en autonomie, pauses libres)
+|===
+
+*Objectif* : une première version *complète* de l'application sur Kubernetes.
+
+include::cloud-native.adoc[]
+
+include::services-reseau.adoc[]
+
+include::configuration.adoc[]
+
+include::promotion.adoc[]
+
+include::exposition.adoc[]
+
+include::disponibilite.adoc[]
+
+== Vocabulaire : français / anglais
+
+[cols="1,1"]
+|===
+| Français | English
+
+| Sans état | _Stateless_
+| Découverte de services | _Service discovery_
+| Répartition de charge | _Load balancing_
+| Configuration externalisée | _Externalized configuration_
+| Variable d'environnement | _Environment variable_
+| Promotion du livrable | _Artifact promotion_
+| Livrable immuable | _Immutable artifact_
+| Contrôle de santé | _Health check_
+| Haute disponibilité | _High availability_
+| Auto-réparation | _Self-healing_
+| Point d'entrée unique | _Single entry point_
+| Routage HTTP | _HTTP routing_
+|===
+
+== À vous de jouer !
+
+=== Objectif de la séance
+
+Obtenir une *première version complète* de l'application fonctionnant sur Kubernetes, avec *tout ce qu'il faut* pour réaliser le *socle obligatoire*.
+
+=== Ce qu'il y a à faire en séance 2
+
+. Déployer *tous* les microservices
+. Créer les *Services* et configurer les communications entre composants (par *nom*, pas par IP)
+. Externaliser la configuration avec des *ConfigMaps*
+. Gérer les mots de passe et clés avec des *Secrets*
+. Connecter l'application à la *base de données externe*
+. *Exposer* l'application hors du cluster
+. Mettre en place des *probes* (liveness, readiness, startup si utile)
+. Tester : supprimez des Pods, vérifiez que tout se recrée
+. *Versionner* vos images (tag explicite) : la *même image* quelle que soit la configuration
+. Travail libre sur le projet
+
+=== Vérifiez votre travail
+
+* [ ] Tous les composants sont `Running` et `Ready`
+* [ ] Les services communiquent par *nom*
+* [ ] Aucun mot de passe dans une image ni en clair dans le dépôt
+* [ ] L'application est accessible depuis votre navigateur
+* [ ] La base de données est atteinte, les données persistent
+* [ ] La suppression d'un Pod n'interrompt pas l'application
+* [ ] Vous pouvez *afficher les logs* d'un composant
+
+=== Aide-mémoire
+
+[source,bash]
+----
+kubectl get all -n <namespace>
+kubectl get svc,endpoints -n <namespace>
+kubectl describe pod <nom> -n <namespace>
+kubectl logs <pod> -n <namespace>
+kubectl rollout restart deployment/<nom> -n <namespace>
+kubectl run test --rm -it --image=busybox -n <namespace> -- sh
+minikube addons enable ingress
+----
+
+== Fin de séance : où en êtes-vous ?
+
+* [ ] Application complète sur Kubernetes
+* [ ] Configuration externalisée, secrets gérés
+* [ ] Base de données externe connectée
+* [ ] Application accessible depuis l'extérieur
+* [ ] Probes en place
+* [ ] Les premières sections du compte rendu rédigées
+
+*Prochaine séance* : mise à jour, diagnostic, observabilité et finalisation.

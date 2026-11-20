@@ -1,0 +1,23 @@
+<header class="container">
+  <nav>
+    <ul>
+      <li><a routerLink="/" class="brand">Mini réseau social</a></li>
+    </ul>
+    <ul>
+      <li><a routerLink="/">Fil</a></li>
+      <li>
+        <a routerLink="/notifications">
+          Notifications@if (auth.isLoggedIn() && badge.unread() > 0) {
+            <span class="badge">{{ badge.unread() }}</span>
+          }
+        </a>
+      </li>
+      @if (auth.isLoggedIn()) {
+        <li><a href="#" role="button" class="secondary outline" (click)="auth.logout(); $event.preventDefault()">Déconnexion</a></li>
+      } @else {
+        <li><a routerLink="/login" role="button" class="outline">Connexion</a></li>
+      }
+    </ul>
+  </nav>
+</header>
+<main class="container"><router-outlet /></main>

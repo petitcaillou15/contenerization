@@ -1,0 +1,26 @@
+<h1>Fil d'actualité</h1>
+
+@if (auth.isLoggedIn()) {
+  <form (ngSubmit)="create()" class="create inline-form">
+    <input name="t" placeholder="Titre" [(ngModel)]="newTitle" required />
+    <textarea name="c" placeholder="Contenu" [(ngModel)]="newContent" required></textarea>
+    <button type="submit">Publier</button>
+  </form>
+}
+
+<ul class="feed-list">
+  @for (p of page().items; track p.id) {
+    <li>
+      <a [routerLink]="['/posts', p.id]">{{ p.title }}</a>
+      <small>par #{{ p.author_id }} — {{ p.created_at | date: 'short' }}</small>
+    </li>
+  } @empty {
+    <li>Aucun post.</li>
+  }
+</ul>
+
+<div class="pager">
+  <button (click)="prev()" [disabled]="pageIndex === 0">Précédent</button>
+  <span>page {{ pageIndex + 1 }} — {{ page().total }} posts</span>
+  <button (click)="next()" [disabled]="(pageIndex + 1) * 20 >= page().total">Suivant</button>
+</div>

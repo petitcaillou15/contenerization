@@ -1,0 +1,100 @@
+ifeval::["{docname}" == "configuration"]
+:imagesdir: ./images
+= Configuration et secrets
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+endif::[]
+
+== Configuration et secrets
+
+=== Séparer l'image et la configuration (_externalized configuration_)
+
+* Une image = *le même code partout* (dev, test, prod)
+* Ce qui change : adresse de la base, niveau de log, mots de passe...
+* On ne reconstruit *pas* une image pour changer de configuration
+
+*Principe cloud-native : la configuration vit dans l'environnement.*
+
+=== ConfigMap
+
+Des données de configuration *non sensibles*, sous forme clé/valeur.
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  LOG_LEVEL: "info"
+  FEATURE_X: "true"
+----
+
+=== Secret
+
+Pour les informations *sensibles* (mots de passe, clés...).
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+type: Opaque
+stringData:
+  API_KEY: "valeur-secrete"
+----
+
+*Attention* : dans un Secret, les valeurs sont *encodées en base64*, pas *chiffrées*.
+
+=== Injecter la configuration dans un Pod
+
+[source,yaml]
+----
+containers:
+  - name: web
+    image: web:1.0
+    envFrom:
+      - configMapRef:
+          name: app-config
+    env:
+      - name: API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: app-secret
+            key: API_KEY
+----
+
+Ce sont des *variables d'environnement* (_environment variables_), lues *au démarrage* du conteneur.
+
+=== Changer la configuration
+
+* Modifier un ConfigMap ou un Secret ne redémarre *pas* automatiquement les Pods
+* Pour relire les variables d'environnement :
+
+[source,bash]
+----
+kubectl rollout restart deployment/web
+----
+
+=== Bonnes pratiques
+
+* *Aucun secret* dans une image Docker
+* *Aucun secret en clair* dans le dépôt Git : réfléchissez à comment gérer vos manifests de Secret
+* Une configuration par environnement, pas par image
+* Le Secret limite l'accès, mais n'est pas un coffre-fort (voir _gestion avancée des secrets_ en approfondissement)
+
+=== Joindre un service hors du cluster
+
+Votre base de données *n'est pas dans Kubernetes*. Comment les Pods la joignent-ils ?
+
+* Les Pods ont besoin d'un *nom stable* vers elle, comme pour un service interne
+* Kubernetes permet de décrire un Service qui *ne cible pas des Pods*
+* Deux mécanismes à connaître :
+** un Service *sans selector* associé à des *Endpoints* écrits à la main
+** un Service de type *ExternalName*, qui renvoie vers un nom DNS
+
+*À vous de trouver comment l'appliquer à votre base.*
+

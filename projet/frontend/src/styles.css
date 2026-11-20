@@ -1,0 +1,107 @@
+/* Pico.css (imported via angular.json) fournit l'essentiel du style.
+   Ce fichier ne contient que les quelques ajustements propres à l'app. */
+
+/* --- Barre de navigation --- */
+nav .brand {
+  font-weight: 700;
+}
+nav .badge {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0.1em 0.45em;
+  margin-left: 0.35em;
+  border-radius: 1em;
+  background: var(--pico-primary);
+  color: var(--pico-primary-inverse);
+  font-size: 0.75em;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* --- Messages de statut --- */
+.error {
+  color: var(--pico-del-color, #b3261e);
+  font-weight: 600;
+}
+.ok {
+  color: var(--pico-ins-color, #1a7f37);
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+/* --- Fil d'actualité : liste en cartes --- */
+.feed-list {
+  list-style: none;
+  padding: 0;
+}
+.feed-list li {
+  list-style: none;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+}
+.feed-list li a {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.feed-list li small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--pico-muted-color);
+}
+
+/* --- Pagination --- */
+.pager {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+.pager button {
+  width: auto;
+  margin: 0;
+}
+.pager span {
+  color: var(--pico-muted-color);
+  font-size: 0.9rem;
+}
+
+/* --- Notifications --- */
+.notif-list {
+  list-style: none;
+  padding: 0;
+}
+.notif-list li {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+}
+.notif-list li.read {
+  opacity: 0.55;
+}
+.notif-list li button {
+  width: auto;
+  margin: 0 0 0 auto;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+/* --- Formulaires courts : ne pas étirer les boutons sur 100 % --- */
+form.inline-form button {
+  width: auto;
+}
+
+/* --- Cartes d'authentification --- */
+.auth-card {
+  max-width: 26rem;
+  margin: 2rem auto;
+}

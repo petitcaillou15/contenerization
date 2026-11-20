@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: users
+  datasource:
+    # Aucune IP en dur : tout vient de l'environnement (ConfigMap/Secret k8s).
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/social?currentSchema=users}
+    username: ${SPRING_DATASOURCE_USERNAME:users_svc}
+    password: ${SPRING_DATASOURCE_PASSWORD:users_pwd}
+  jpa:
+    hibernate:
+      ddl-auto: none          # le schéma est géré par Liquibase, jamais par Hibernate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: users
+  liquibase:
+    change-log: classpath:db/changelog/changelog-master.xml
+    default-schema: users
+    # Le seed (context "demo") ne se charge que si SEED_ENABLED est défini côté compose
+    # (docker-compose passe SPRING_LIQUIBASE_CONTEXTS=demo via ${SEED_ENABLED:+demo}).
+    contexts: ${SPRING_LIQUIBASE_CONTEXTS:}
+
+# Auth : ce service est le SEUL à connaître le secret JWT.
+jwt:
+  secret: ${JWT_SECRET:dev-only-insecure-secret-change-me-0123456789}
+  expiration-seconds: ${JWT_EXPIRATION:86400}
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,prometheus
+      path-mapping:
+        prometheus: metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
