@@ -28,6 +28,10 @@ users:
   service-url: ${USERS_SERVICE_URL:http://localhost:8081}
   http-timeout-ms: ${USERS_HTTP_TIMEOUT_MS:1000}
 
+# Version applicative (exposée sur GET /version).
+app:
+  version: 2.0.0
+
 management:
   endpoints:
     web:

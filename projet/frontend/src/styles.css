@@ -1,6 +1,46 @@
 /* Pico.css (imported via angular.json) fournit l'essentiel du style.
    Ce fichier ne contient que les quelques ajustements propres à l'app. */
 
+/* --- v2 : thème vert, bandeau et pied de page de versions --- */
+:root:not([data-theme='dark']) {
+  --pico-primary: #1b7f4b;
+  --pico-primary-background: #1b7f4b;
+  --pico-primary-hover: #14633a;
+  --pico-primary-hover-background: #14633a;
+  --pico-primary-underline: rgba(27, 127, 75, 0.5);
+}
+.v2-banner {
+  padding: 0.5rem 1rem;
+  background: #1b7f4b;
+  color: #fff;
+  text-align: center;
+  font-size: 0.9rem;
+}
+nav .v2-tag {
+  padding: 0.05em 0.5em;
+  border-radius: 0.4em;
+  background: #1b7f4b;
+  color: #fff;
+  font-size: 0.7em;
+  vertical-align: middle;
+}
+.versions {
+  margin-top: 2rem;
+  padding-bottom: 1rem;
+  color: var(--pico-muted-color);
+  text-align: center;
+}
+.char-count {
+  display: block;
+  margin: -0.5rem 0 0.75rem;
+  color: var(--pico-muted-color);
+  text-align: right;
+}
+.char-count.over {
+  color: var(--pico-del-color, #b3261e);
+  font-weight: 600;
+}
+
 /* --- Barre de navigation --- */
 nav .brand {
   font-weight: 700;

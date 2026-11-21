@@ -4,6 +4,7 @@
   <form (ngSubmit)="create()" class="create inline-form">
     <input name="t" placeholder="Titre" [(ngModel)]="newTitle" required />
     <textarea name="c" placeholder="Contenu" [(ngModel)]="newContent" required></textarea>
+    <small class="char-count" [class.over]="newContent.length > maxContent">{{ newContent.length }} / {{ maxContent }}</small>
     <button type="submit">Publier</button>
   </form>
 }

@@ -112,6 +112,38 @@ kubectl run test --rm -it --image=busybox -n <namespace> -- sh
 minikube addons enable ingress
 ----
 
+== Pour la prochaine séance
+
+Séance 3 et *soutenances le même jour* : lundi *23/11*.
+
+La séance 3 est courte et déjà chargée (mise à jour, diagnostic, observabilité).
+*Tout ce qui peut être fait avant doit être fait avant.*
+
+À avoir *prêt en arrivant* :
+
+* [ ] Le *socle de la séance 2 fonctionne* : composants `Running` et `Ready`, communication entre composants, application *accessible depuis le navigateur*
+* [ ] Vos *images sont construites et taguées explicitement* (`1.0`, jamais `latest`)
+* [ ] Votre *cluster* démarre et la *base de données* (docker-compose séparé) tourne, avec ses données
+* [ ] Votre *README* est complété : construire, déployer, accéder, vérifier
+* [ ] Votre *soutenance est préparée*, avec la *parole répartie* entre les membres du groupe
+
+=== Le test qui valide tout le reste
+
+Supprimez votre Namespace, *entièrement* :
+
+[source,bash]
+----
+kubectl delete namespace <votre-namespace>
+----
+
+Puis *remontez toute l'application*, uniquement à partir de votre dépôt.
+
+* Chaque étape doit être *décrite dans le README* ou *scriptée*
+* Si vous devez improviser une commande, votre README est *incomplet*
+* C'est exactement ce qui est évalué sur la *reproductibilité*
+
+*Faites ce test avant lundi* — pas pendant la séance 3.
+
 == Fin de séance : où en êtes-vous ?
 
 * [ ] Application complète sur Kubernetes

@@ -2,6 +2,7 @@ package com.example.social.posts.web;
 
 import com.example.social.posts.auth.AuthFilter;
 import com.example.social.posts.service.PostService;
+import com.example.social.posts.service.exception.ContentTooLongException;
 import com.example.social.posts.users.VerifiedUser;
 import com.example.social.posts.web.dto.CreatePostRequest;
 import com.example.social.posts.web.dto.PageResponse;
@@ -10,6 +11,7 @@ import com.example.social.posts.web.dto.PostSummary;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +19,12 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService posts;
+    private final int maxContentLength;
 
-    public PostController(PostService posts) {
+    public PostController(PostService posts,
+                          @Value("${posts.max-content-length}") int maxContentLength) {
         this.posts = posts;
+        this.maxContentLength = maxContentLength;
     }
 
     /** Fil d'actualité : lecture directe Postgres, tri date DESC, paginé. Public. */
@@ -42,6 +47,9 @@ public class PostController {
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Long> create(HttpServletRequest request,
                                     @Valid @RequestBody CreatePostRequest body) {
+        if (body.content().length() > maxContentLength) {
+            throw new ContentTooLongException(maxContentLength);
+        }
         VerifiedUser me = (VerifiedUser) request.getAttribute(AuthFilter.ATTR);
         var saved = posts.create(body.title(), body.content(), me.id());
         return Map.of("id", saved.getId());

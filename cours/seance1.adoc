@@ -254,6 +254,56 @@ kubectl rollout status deployment/users -n mini-reseau
 kubectl delete -f k8s/
 ----
 
+== Récupérer les mises à jour du cours
+
+Quand je pousse une nouvelle version sur le dépôt du cours, *vous la récupérez via `upstream`* :
+
+[source,bash]
+----
+git status                              # committez d'abord votre travail
+git fetch upstream                      # télécharge les nouveautés du cours
+git log --oneline HEAD..upstream/main   # que contient la mise à jour ?
+git merge upstream/main                 # fusionne dans votre main
+git push origin main                    # publie chez vous
+----
+
+* `git merge` crée un *commit de merge* dans votre historique (sauf si vous n'avez rien committé de votre côté) : gardez le message proposé
+* Conflit ? Corrigez les fichiers, puis `git add` + `git commit`
+* Jamais de `git push upstream` : ce n'est pas votre dépôt
+
+== Pour la prochaine séance
+
+À avoir *prêt en arrivant* :
+
+* [ ] *Images optimisées* : Dockerfiles multi-stage + `.dockerignore`, images construites et légères
+* [ ] *minikube installé* et démarré (`minikube start`), `kubectl` fonctionnel
+* [ ] Le *manifest de test* ci-dessous appliqué avec succès
+
+=== Manifest de test
+
+Fichier `dummy.yaml` :
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dummy
+spec:
+  containers:
+    - name: dummy
+      image: busybox:1.36
+      command: ["sh", "-c", "echo Bonjour depuis Kubernetes ; sleep 3600"]
+----
+
+[source,bash]
+----
+kubectl apply -f dummy.yaml
+kubectl get pod dummy      # Running
+kubectl logs dummy         # Bonjour depuis Kubernetes
+kubectl delete -f dummy.yaml
+----
+
 == Fin de séance : où en êtes-vous ?
 
 * [ ] Repo créé, partagé, premiers commits

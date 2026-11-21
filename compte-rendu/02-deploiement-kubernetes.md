@@ -62,7 +62,8 @@ minikube image build -t mini-reseau-social-users:1.0.0 services/users
 # (même chose pour posts, notifications, gateway, frontend)
 minikube image ls        # pour vérifier
 ```
-Par la suite, on a ajouté un script qui construit les 5 images d'un coup, avec la version donnée en paramètre : `./scripts/build-images.sh 1.0.0`.
+Par la suite, on a ajouté un script qui construit les 5 images d'un coup, avec la version donnée en paramètre : `./scripts/build_images.sh 1.0.0`.
+
 
 **Déployer.** Avec `kubectl apply -f` :
 

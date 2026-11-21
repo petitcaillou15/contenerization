@@ -24,10 +24,20 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+# Longueur maximale du contenu d'un post (nouveau en 3.0.0).
+# Valeur OBLIGATOIRE, fournie par l'environnement (variable POSTS_MAX_CONTENT_LENGTH) :
+# pas de valeur par défaut.
+posts:
+  max-content-length: ${POSTS_MAX_CONTENT_LENGTH}
+
 # Dépendance synchrone vers users : résolue PAR NOM DE SERVICE via variable d'env.
 users:
   service-url: ${USERS_SERVICE_URL:http://localhost:8081}
   http-timeout-ms: ${USERS_HTTP_TIMEOUT_MS:1000}
+
+# Version applicative (exposée sur GET /version).
+app:
+  version: 3.0.0
 
 management:
   endpoints:

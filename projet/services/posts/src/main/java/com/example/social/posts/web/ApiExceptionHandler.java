@@ -1,5 +1,6 @@
 package com.example.social.posts.web;
 
+import com.example.social.posts.service.exception.ContentTooLongException;
 import com.example.social.posts.service.exception.ForbiddenException;
 import com.example.social.posts.service.exception.PostNotFoundException;
 import com.example.social.posts.service.exception.WritesDisabledException;
@@ -20,6 +21,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(PostNotFoundException.class)
     public ResponseEntity<Map<String, String>> notFound(PostNotFoundException e) {
         return err(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(ContentTooLongException.class)
+    public ResponseEntity<Map<String, String>> tooLong(ContentTooLongException e) {
+        return err(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
     @ExceptionHandler(ForbiddenException.class)

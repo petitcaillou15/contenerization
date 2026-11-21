@@ -18,6 +18,9 @@ spring:
       host: localhost
       port: 6379          # non contacté dans les tests unitaires (publisher mocké)
 
+posts:
+  max-content-length: 280
+
 users:
   service-url: http://users.test.invalid    # jamais appelé réellement en test unitaire
   http-timeout-ms: 200

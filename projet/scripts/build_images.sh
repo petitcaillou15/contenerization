@@ -20,11 +20,11 @@ build() {
   minikube image build -t "mini-reseau-social-$1:$VERSION" "$2"
 }
 
-build users         projet/services/users
-build posts         projet/services/posts
-build notifications projet/services/notifications
-build gateway       projet/gateway
-build frontend      projet/frontend
+build users         services/users
+build posts         services/posts
+build notifications services/notifications
+build gateway       gateway
+build frontend      frontend
 
 echo "Images $VERSION construites :"
 minikube image ls | grep "mini-reseau-social.*:$VERSION"

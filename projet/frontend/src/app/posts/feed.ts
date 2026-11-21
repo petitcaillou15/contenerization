@@ -19,6 +19,8 @@ export class FeedComponent implements OnInit {
   pageIndex = 0;
   newTitle = '';
   newContent = '';
+  /** Longueur de contenu recommandée (indicatif, affichée par le compteur). */
+  readonly maxContent = 280;
 
   ngOnInit(): void { this.load(); }
 

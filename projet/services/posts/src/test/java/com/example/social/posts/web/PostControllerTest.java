@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PostController.class)
+@TestPropertySource(properties = "posts.max-content-length=10")
 class PostControllerTest {
 
     @Autowired MockMvc mvc;
@@ -60,6 +62,16 @@ class PostControllerTest {
                         .content("{\"title\":\"t\",\"content\":\"c\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(7));
+    }
+
+    @Test
+    void createPost_contentTooLong_returns400() throws Exception {
+        mvc.perform(post("/posts")
+                        .requestAttr("verifiedUser", new VerifiedUser(3L, "carol"))
+                        .contentType("application/json")
+                        .content("{\"title\":\"t\",\"content\":\"12345678901\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("content must be at most 10 characters"));
     }
 
     @Test
