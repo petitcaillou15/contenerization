@@ -8,7 +8,7 @@
 
 PostgreSQL tourne dans un conteneur Docker, lancé par un `docker-compose.yml` séparé (`db/`). Le conteneur s'appelle `base-postgres`, utilise l'image `postgres:16-alpine` et publie le port 5432 sur la machine.
 
-Au premier démarrage, le script `db/00-init.sql` crée un schéma et un utilisateur par service (`users_svc`, `posts_svc`, `notifications_svc`). Chaque service n'a accès qu'à son schéma.
+Au premier démarrage, le script `db/00-init.sql` crée un schéma et un utilisateur par service (`users_svc`, `posts_svc`, `notifications_svc`). Chaque service n'a accès qu'à son schéma. Les mots de passe ne sont pas écrits dans ce script : il les lit dans des variables d'environnement (commande `\getenv`), fournies par le fichier `k8s/.env.secrets` grâce à `env_file` dans le `docker-compose.yml`.
 
 **Persistance**
 
@@ -20,7 +20,7 @@ Par le Service `postgres` de type `ExternalName`, qui renvoie vers `host.minikub
 
 ## Comment
 
-**Lancer la base** (depuis `projet/`, avec un fichier `db/.env` qui contient `POSTGRES_USER`, `POSTGRES_PASSWORD` et `POSTGRES_DB`) :
+**Lancer la base** (depuis `projet/`). Il faut deux fichiers non versionnés, créés à partir de leurs modèles : `db/.env` (l'administrateur de la base) et `k8s/.env.secrets` (les mots de passe des services) :
 
 ```bash
 cd db
@@ -56,6 +56,7 @@ Le conteneur est neuf (créé 9 secondes plus tôt), mais les 5 posts sont toujo
 
 ## Pourquoi ces choix
 
+- **Pas de mot de passe dans `00-init.sql`** : à l'origine, le script contenait les mots de passe en clair. On les a sortis du dépôt, et la base les lit dans le même fichier que le Secret Kubernetes.
 - **Hors Kubernetes** : la base garde ses données même si on supprime tout le cluster.
 - **Un volume nommé** : les données d'un conteneur disparaissent avec lui ; un volume vit indépendamment.
 - **Un utilisateur et un schéma par service** : un service ne peut pas lire ou modifier les données d'un autre.

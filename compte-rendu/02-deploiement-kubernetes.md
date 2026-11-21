@@ -72,6 +72,7 @@ kubectl apply -f projet/k8s/<fichier>.yaml
 kubectl get pods -n mini-reseau
 kubectl rollout status deployment/<nom> -n mini-reseau
 ```
+Par la suite, on a ajouté un script qui déploie toute l'application : `./scripts/deploy.sh`.
 
 ## Pourquoi ces choix
 

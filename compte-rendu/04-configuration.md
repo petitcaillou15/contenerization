@@ -22,7 +22,7 @@ Ces valeurs arrivent dans les conteneurs sous forme de **variables d'environneme
 
 Un Secret, `app-secrets`, avec 4 valeurs : les mots de passe de la base des 3 services (`USERS_DB_PASSWORD`, `POSTS_DB_PASSWORD`, `NOTIFICATIONS_DB_PASSWORD`) et `JWT_SECRET`, la clé qui sert à signer les jetons de connexion.
 
-Le Secret **n'est pas dans le dépôt**. Ses valeurs sont dans un fichier local `k8s/.env.secrets`, ignoré par Git, et on crée le Secret à partir de ce fichier.
+Le Secret **n'est pas dans le dépôt**. Ses valeurs sont dans un fichier local `k8s/.env.secrets`, ignoré par Git, et on crée le Secret à partir de ce fichier. Seul un modèle sans valeurs, `k8s/.env.example`, est versionné. Ce même fichier fournit aussi les mots de passe à la base de données (voir partie 6) : ils ne sont écrits qu'à un seul endroit.
 
 **Preuve qu'on change la configuration sans reconstruire d'image**
 
@@ -34,6 +34,11 @@ On a changé `JWT_EXPIRATION` de `86400` à `3600` dans le ConfigMap, puis redé
 
 ```bash
 kubectl apply -f k8s/app-config.yaml
+```
+**Créer le fichier des secrets** à partir du modèle, puis remplacer chaque `a_remplir` :
+
+```bash
+cp k8s/.env.example k8s/.env.secrets
 ```
 
 **Créer le Secret** à partir du fichier local :
@@ -80,15 +85,12 @@ On a ensuite remis la valeur d'origine de la même façon.
 
 ## Pourquoi ces choix
 
-- **ConfigMap pour la configuration, Secret pour les mots de passe** : le cours demande de séparer les deux.
+- **Un seul fichier pour la base et le Secret** : la base crée les comptes des services avec ces mots de passe, et les services s'y connectent avec les mêmes. Les lire au même endroit évite qu'ils divergent.
 - **Un seul ConfigMap partagé (`app-config`)** : les 3 services Java utilisent les mêmes valeurs (nom de la base, adresse de Redis, adresse de `users`). Les écrire une seule fois évite qu'elles divergent.
-- **Le Secret hors du dépôt** : un mot de passe committé dans Git reste dans l'historique pour toujours.
-- **`rollout restart` après un changement** : les variables d'environnement sont lues au démarrage du conteneur. Modifier le ConfigMap ne suffit pas, il faut redémarrer les Pods (comme indiqué dans le cours).
+- **`rollout restart` après un changement** : les variables d'environnement sont lues au démarrage du conteneur. Modifier le ConfigMap ne suffit pas, il faut redémarrer les Pods.
 
 ## Difficultés rencontrées
 
 Pas de difficultés remarquables.
 
 ## Éléments à relire
-
-- Le fichier `k8s/.env.secrets` doit être recréé à la main sur chaque machine (à expliquer dans le README).

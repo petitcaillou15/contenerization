@@ -78,7 +78,7 @@ jdbc:postgresql://postgres:5432/$(POSTGRES_DB)?currentSchema=users
 
 ## Difficultés rencontrées
 
-Pas de difficultés remarquables.
+- **Accès sous WSL.** Sous WSL avec Docker Desktop, l'adresse de minikube (`minikube ip`) n'est pas joignable : la requête vers `mini-reseau.local` restait sans réponse. On a lancé `minikube tunnel`, qui rend l'Ingress accessible sur `127.0.0.1`, et associé `mini-reseau.local` à `127.0.0.1` dans `/etc/hosts`.
 
 ## Éléments à relire
 
