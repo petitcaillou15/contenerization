@@ -65,17 +65,20 @@ Démarrer minikube, puis construire les 5 images d'une version avec le script `b
 ```bash
 minikube start
 
-git switch main
-./scripts/build_images.sh 1.0.0     # version initiale
+git switch --detach v1.0.0  
+./scripts/build_images.sh 1.0.0         # Version initiale
 
-git switch V2
-./scripts/build_images.sh 2.0.0     # version évoluée
+git switch --detach v2.0.0
+./scripts/build_images.sh 2.0.0         # Version évoluée
 
-git switch V3
-./scripts/build_images.sh 3.0.0     # version KO
+git switch --detach v3.0.0Correction
+./scripts/build_images.sh 3.0.0C        # Version avec la limite de caractères
 
-git switch main                     # revenir sur main avant de déployer
-minikube image ls | grep mini-reseau    # les 15 images doivent apparaître
+git switch --detach v3.0.0Rollback
+./scripts/build_images.sh 3.0.0R        # Version KO
+
+git switch main                         # revenir sur main avant de déployer
+minikube image ls | grep mini-reseau    # les 20 images doivent apparaître
 ```
 
 ## 3. Déployer l'application
@@ -136,13 +139,27 @@ Les images de la version doivent avoir été construites (section 2). Le script 
 
 ```bash
 ./scripts/switch_version.sh 2.0.0     # version évoluée
+kubectl get deployments -n mini-reseau \
+-o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[*].image       # Vérifier les versions qui tournent   
+
 ./scripts/switch_version.sh 1.0.0     # retour à la version initiale
+kubectl get deployments -n mini-reseau \
+-o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[*].image       # Vérifier les versions qui tournent   
+```
+
+**Version Correction (3.0.0)** : Il faut se placer dans le tag v3.0.0Correction
+
+```bash
+git switch --detach v3.0.0Correction
+./scripts/switch_version.sh 3.0.0C     # Version avec longueure maximale du post
+kubectl get deployments -n mini-reseau \
+-o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[*].image       # Vérifier les versions qui tournent   
 ```
 
 **Version KO (3.0.0)** : le service `posts` ne démarre pas.
 
 ```bash
-./scripts/switch_version.sh 3.0.0     # posts reste en erreur : arrêter le script avec Ctrl+C
+./scripts/switch_version.sh 3.0.0R     # posts reste en erreur : arrêter le script avec Ctrl+C
 ```
 
 Diagnostic :

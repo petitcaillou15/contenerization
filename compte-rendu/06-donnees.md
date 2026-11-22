@@ -54,6 +54,30 @@ $ docker exec base-postgres psql -U admin -d social -c "select count(*) from pos
 
 Le conteneur est neuf (créé 9 secondes plus tôt), mais les 5 posts sont toujours là : ils étaient dans le volume, pas dans le conteneur.
 
+
+## Conservation des données lors des changements de version
+
+La base de données PostgreSQL est exécutée en dehors
+du cluster Kubernetes, dans un conteneur Docker séparé.
+
+Ses données sont conservées dans un volume Docker nommé
+`pg_data`.
+
+Les changements de version de l'application concernent
+les images des services applicatifs et ne nécessitent
+pas de supprimer ou de recréer le volume PostgreSQL.
+
+Les versions 2.0.0 et 3.0.0 ne nécessitent pas
+de modification du schéma de la base de données.
+
+Ainsi, les publications, les commentaires, les utilisateurs
+et les notifications enregistrés restent conservés
+lors des changements de version applicative.
+
+Cette séparation permet de faire évoluer les services
+sans modifier le stockage des données.
+
+
 ## Pourquoi ces choix
 
 - **Pas de mot de passe dans `00-init.sql`** : à l'origine, le script contenait les mots de passe en clair. On les a sortis du dépôt, et la base les lit dans le même fichier que le Secret Kubernetes.

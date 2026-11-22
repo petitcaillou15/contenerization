@@ -143,6 +143,40 @@ kubectl rollout restart deployment/users -n mini-reseau
 
 **Git** : tout est fait sur la branche `multi-stage`, poussée avec `git push -u origin multi-stage`, puis merge request vers `main`. Le cache et l'utilisateur non root ont été ajoutés ensuite sur la branche `docker-cache-nonroot`.
 
+
+## Gestion des versions des images
+
+Les images Docker sont identifiées par des tags explicites
+afin de pouvoir retrouver et déployer une version précise
+de chaque service.
+
+Les tags utilisés sont :
+- `1.0.0` : version initiale de l'application ;
+- `2.0.0` : version évoluée de l'application ;
+- `3.0.0` : évolution spécifique du service `posts`.
+
+La version 3.0.0 ne concerne que le service `posts`.
+Les autres services conservent leurs images en version 2.0.0.
+
+La correspondance des images utilisées pour les différentes
+versions est la suivante :
+
+| Service | Version initiale | Version évoluée | Évolution spécifique |
+|---|---|---|---|
+| users | 1.0.0 | 2.0.0 | 2.0.0 |
+| posts | 1.0.0 | 2.0.0 | 3.0.0 |
+| notifications | 1.0.0 | 2.0.0 | 2.0.0 |
+| gateway | 1.0.0 | 2.0.0 | 2.0.0 |
+| frontend | 1.0.0 | 2.0.0 | 2.0.0 |
+
+Les tags Docker permettent de sélectionner une image,
+mais ils ne construisent pas automatiquement le code
+correspondant à une version.
+
+Il faut donc construire chaque image à partir du code
+source correspondant avant de la déployer.
+
+
 ## Pourquoi ces choix
 
 ### Pourquoi telle image de base ?

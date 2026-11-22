@@ -15,6 +15,7 @@ Un seul ConfigMap (`k8s/app-config.yaml`) avec la configuration non sensible par
 | `USERS_HTTP_TIMEOUT_MS` | `1000` | délai maximum de cet appel |
 | `REDIS_HOST` / `REDIS_PORT` | `redis` / `6379` | adresse de Redis |
 | `JWT_EXPIRATION` | `86400` | durée de validité d'un jeton (24 h) |
+| `POSTS_MAX_CONTENT_LENGTH` | `280` | nombre maximum de caractères dans un post (uniquement dans la version 3.0.0 corrigée) | 
 
 Ces valeurs arrivent dans les conteneurs sous forme de **variables d'environnement**. Dans chaque Deployment Java, `envFrom` charge tout le ConfigMap d'un coup.
 
@@ -82,6 +83,64 @@ kubectl describe pod -n mini-reseau -l app=users | grep "Image ID"
 ```
 
 On a ensuite remis la valeur d'origine de la même façon.
+
+### Configuration spécifique à la version 3.0.0
+
+La version 3.0.0 du service `posts` introduit une limite
+de longueur pour le contenu des publications.
+
+Cette limite est définie par la variable d'environnement
+`POSTS_MAX_CONTENT_LENGTH`.
+
+Dans notre configuration, cette variable est définie
+à 280 caractères dans le ConfigMap `app-config` :
+
+```yaml
+POSTS_MAX_CONTENT_LENGTH: "280"
+```
+
+La variable est obligatoire : l'application ne définit
+pas de valeur par défaut.
+
+Dans le fichier `application.yml` du service `posts`,
+la propriété est associée à cette variable :
+
+```yaml
+posts:
+  max-content-length: ${POSTS_MAX_CONTENT_LENGTH}
+```
+
+Lors du passage en version 3.0.0, le script
+`switch_version.sh` réapplique le ConfigMap avant
+de mettre à jour le Deployment `posts`.
+
+Cela permet au nouveau conteneur de récupérer
+la configuration nécessaire à son démarrage.
+
+La limite peut être vérifiée dans le conteneur
+avec la commande :
+
+```bash
+kubectl exec -n mini-reseau deploy/posts -- \
+  printenv POSTS_MAX_CONTENT_LENGTH
+```
+
+La valeur attendue est :
+
+```text
+280
+```
+
+La configuration du ConfigMap peut également être
+consultée directement depuis Kubernetes :
+
+```bash
+kubectl get configmap app-config -n mini-reseau -o yaml
+```
+
+Cette commande permet de vérifier que la variable
+`POSTS_MAX_CONTENT_LENGTH` est bien présente
+et possède la valeur attendue.
 
 ## Pourquoi ces choix
 

@@ -5,6 +5,11 @@ metadata:
   namespace: mini-reseau  # On le place dans notre Namespace
 spec:
   replicas: 1   # Nombre de conteneurs souhaités
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: users

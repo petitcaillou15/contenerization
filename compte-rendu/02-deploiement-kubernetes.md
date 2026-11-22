@@ -74,6 +74,127 @@ kubectl rollout status deployment/<nom> -n mini-reseau
 ```
 Par la suite, on a ajouté un script qui déploie toute l'application : `./scripts/deploy.sh`.
 
+
+## Gestion des versions applicatives
+
+Les différentes versions de l'application sont déployées
+à partir d'images Docker portant des tags explicites.
+
+Le changement de version est automatisé par le script
+`projet/scripts/switch_version.sh`.
+
+Ce script utilise la commande `kubectl set image`
+pour modifier l'image utilisée par un Deployment,
+puis `kubectl rollout status` pour attendre la fin
+du déploiement.
+
+### Déploiement de la version initiale
+
+La commande suivante permet de déployer la version 1.0.0
+sur les cinq services :
+
+```bash
+./projet/scripts/switch_version.sh 1.0.0
+```
+## V3 correction
+
+### Déploiement de la version évoluée
+
+La commande suivante permet de déployer la version 2.0.0
+sur les cinq services :
+
+```bash
+./projet/scripts/switch_version.sh 2.0.0
+```
+
+### Déploiement de la version 3.0.0
+
+La version 3.0.0 ne concerne que le service `posts`.
+
+Le script commence par réappliquer le ConfigMap
+`projet/k8s/app-config.yaml`, puis met à jour uniquement
+le Deployment `posts`.
+
+```bash
+./projet/scripts/switch_version.sh 3.0.0
+```
+
+Les services `users`, `notifications`, `gateway`
+et `frontend` restent en version 2.0.0.
+
+### Vérification des images déployées
+
+Les images réellement utilisées par les Deployments
+peuvent être vérifiées avec :
+
+```bash
+kubectl get deployments -n mini-reseau \
+  -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image
+```
+
+Cette commande permet de vérifier que les cinq services
+utilisent les images attendues après chaque changement
+de version.
+
+### Test de la vérification des versions avant le passage en V3
+
+Nous avons testé le mécanisme de vérification ajouté au script `switch_version.sh` avant le déploiement de la version 3.0.0.
+
+Pour rappel, la V3 concerne uniquement le service `posts`. Les quatre autres services (`users`, `notifications`, `gateway` et `frontend`) doivent donc être en version 2.0.0.
+
+Lors du test, le script a détecté les versions suivantes :
+
+| Service | Version détectée | Version attendue |
+|---|---|---|
+| users | 2.0.0 | 2.0.0 |
+| notifications | 2.0.0 | 2.0.0 |
+| gateway | 2.0.0 | 2.0.0 |
+| frontend | 1.0.0 | 2.0.0 |
+
+``` text
+Passage en V3 : vérification des versions préalables...
+Vérification de users...
+users est bien en version 2.0.0.
+Vérification de notifications...
+notifications est bien en version 2.0.0.
+Vérification de gateway...
+gateway est bien en version 2.0.0.
+Vérification de frontend...
+ERREUR : frontend n'est pas en version 2.0.0.
+Image actuelle : mini-reseau-social-frontend:1.0.0
+Image attendue : mini-reseau-social-frontend:2.0.0
+Passage en V3 annulé.
+```
+
+Le script a correctement identifié que le frontend était encore en version 1.0.0.
+
+Il a alors affiché un message d'erreur indiquant la version actuelle et la version attendue, puis a annulé le passage en V3.
+
+Ce test est concluant : le script empêche le déploiement de la V3 lorsque les conditions préalables ne sont pas respectées. Il évite ainsi de déployer une version de `posts` dans un environnement dont les autres services ne correspondent pas à la version attendue.
+
+### Vérification des versions avant le passage en V3
+
+La version 3.0.0 concerne uniquement le service `posts`. Les services `users`, `notifications`, `gateway` et `frontend` doivent donc rester en version 2.0.0.
+
+Afin d'éviter un déploiement incohérent, le script `switch_version.sh` vérifie désormais les versions de ces quatre services avant d'autoriser le passage en V3.
+
+Si les quatre services sont bien en version 2.0.0, le script réapplique la configuration Kubernetes, puis met à jour uniquement le service `posts`.
+
+Si l'un des services n'est pas en version 2.0.0, le script affiche un message d'erreur et interrompt l'opération avant de modifier le déploiement.
+
+Cette vérification permet de garantir que la V3 est déployée sur la base de la V2 attendue, sans modifier involontairement les autres services.
+
+## V3 rollback
+### Démonstration du déploiement et du rollback
+
+Nous avons réalisé un scénario de mise à jour comprenant trois étapes :
+
+1. Déploiement de la version 2.0.0, qui fonctionne correctement.
+2. Déploiement de la version 3.0.0 du service `posts`, qui provoque une erreur au démarrage en raison de l'absence de la variable `POSTS_MAX_CONTENT_LENGTH`.
+3. Diagnostic du problème, puis demande de rollback vers la révision précédente avec `kubectl rollout undo`.
+
+Cette manipulation permet de démontrer le mécanisme de mise à jour progressive de Kubernetes, la possibilité d'observer un déploiement défaillant et la capacité de revenir à une révision précédente.
+
 ## Pourquoi ces choix
 
 - **Deployment plutôt que Pod seul** : un Pod créé seul n'est pas recréé s'il disparaît. Un Deployment maintient le nombre de Pods demandé et permet les mises à jour progressives.

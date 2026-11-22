@@ -78,7 +78,42 @@ jdbc:postgresql://postgres:5432/$(POSTGRES_DB)?currentSchema=users
 
 ## Difficultés rencontrées
 
-- **Accès sous WSL.** Sous WSL avec Docker Desktop, l'adresse de minikube (`minikube ip`) n'est pas joignable : la requête vers `mini-reseau.local` restait sans réponse. On a lancé `minikube tunnel`, qui rend l'Ingress accessible sur `127.0.0.1`, et associé `mini-reseau.local` à `127.0.0.1` dans `/etc/hosts`.
+### Accès sous WSL
+
+ Sous WSL avec Docker Desktop, l'adresse de minikube (`minikube ip`) n'est pas joignable : la requête vers `mini-reseau.local` restait sans réponse. On a lancé `minikube tunnel`, qui rend l'Ingress accessible sur `127.0.0.1`, et associé `mini-reseau.local` à `127.0.0.1` dans `/etc/hosts`.
+
+### Accès à l'Ingress avec Minikube et Docker Desktop sous windows
+
+L'accès direct à l'adresse IP de Minikube ne fonctionnait
+pas correctement dans notre environnement Windows
+avec Docker Desktop.
+
+Pour résoudre ce problème, nous avons utilisé
+la commande suivante dans un terminal PowerShell
+ouvert en administrateur :
+
+```powershell
+minikube tunnel
+```
+
+Cette commande permet de rendre accessibles
+les services exposés par les mécanismes de type LoadBalancer
+et de faciliter l'accès à l'Ingress dans notre environnement.
+
+Le fichier hosts de Windows doit également associer
+le nom `mini-reseau.local` à l'adresse locale utilisée
+par l'Ingress.
+
+Après cette configuration, l'application est accessible
+depuis le navigateur à l'adresse :
+
+```text
+http://mini-reseau.local
+```
+
+Le tunnel doit rester actif pendant l'utilisation
+de l'application.
+
 
 ## Éléments à relire
 
